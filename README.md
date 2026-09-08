@@ -152,6 +152,7 @@ Failure modes: [docs/failure-modes.md](docs/failure-modes.md).
 | My week | Verified obligations, conflicts, 14-day plan |
 | Approvals | Pending calendar and mail writes |
 | Evidence | Why TermPilot made a claim |
+| Install / SDK | PWA on this device. Home-screen icon is the G1 robot. `/sdk` downloads JS, Python, icon and the G1 pack. `/xr` launches the same robot in WebXR (VR/AR). |
 
 ---
 

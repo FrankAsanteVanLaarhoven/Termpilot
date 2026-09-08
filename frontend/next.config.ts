@@ -26,7 +26,7 @@ const nextConfig: NextConfig = {
           { key: "Referrer-Policy", value: "no-referrer" },
           {
             key: "Permissions-Policy",
-            value: "camera=(), microphone=(), geolocation=(), display-capture=()",
+            value: "camera=(self), microphone=(), geolocation=(), display-capture=(), xr-spatial-tracking=(self)",
           },
           { key: "X-Robots-Tag", value: "noindex, nofollow, noarchive, nosnippet" },
           { key: "Cross-Origin-Opener-Policy", value: "same-origin" },

@@ -8,6 +8,8 @@ export const G1_URDF = "/robot/g1/g1.urdf";
 
 type Pointer = { x: number; y: number };
 
+type XrMode = "immersive-vr" | "immersive-ar";
+
 export function G1Humanoid({
   mood = "idle",
   expression = "idle",
@@ -17,6 +19,7 @@ export function G1Humanoid({
   ariaLabel = "Interactive G1 humanoid",
   loading = null,
   fallback = null,
+  allowXr = false,
 }: {
   mood?: G1Mood | string;
   expression?: G1Expression | string;
@@ -26,14 +29,38 @@ export function G1Humanoid({
   ariaLabel?: string;
   loading?: ReactNode;
   fallback?: ReactNode;
+  allowXr?: boolean;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const moodRef = useRef(mood);
   const expressionRef = useRef(expression);
   const pointerRef = useRef<Pointer>({ x: 0, y: 0 });
+  const xrRendererRef = useRef<{
+    setSession: (session: XRSession) => Promise<void>;
+    isPresenting: boolean;
+  } | null>(null);
   const [modelState, setModelState] = useState<"loading" | "ready" | "fallback">("loading");
+  const [xrSupport, setXrSupport] = useState<{ vr: boolean; ar: boolean }>({ vr: false, ar: false });
+  const [xrBusy, setXrBusy] = useState<XrMode | null>(null);
+  const [xrNote, setXrNote] = useState<string | null>(null);
   moodRef.current = mood;
   expressionRef.current = expression;
+
+  useEffect(() => {
+    if (!allowXr) return;
+    const xr = navigator.xr;
+    if (!xr) {
+      setXrNote("XR needs a headset or an AR-capable phone, on HTTPS.");
+      return;
+    }
+    void Promise.all([
+      xr.isSessionSupported("immersive-vr").catch(() => false),
+      xr.isSessionSupported("immersive-ar").catch(() => false),
+    ]).then(([vr, ar]) => {
+      setXrSupport({ vr, ar });
+      if (!vr && !ar) setXrNote("This device has no WebXR session. Install the PWA and open it from the home screen, or use a headset.");
+    });
+  }, [allowXr]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -51,6 +78,7 @@ export function G1Humanoid({
 
         const renderer = new THREE.WebGLRenderer({ canvas: canvasEl, alpha: true, antialias: true, powerPreference: "high-performance" });
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        if (allowXr) renderer.xr.enabled = true;
         renderer.outputColorSpace = THREE.SRGBColorSpace;
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
         renderer.toneMappingExposure = 1.42;
@@ -302,13 +330,24 @@ export function G1Humanoid({
           spot.target.position.set(0.08, 0.92 - p.y * 0.18, -p.x * 0.32);
           camera.lookAt(0, 0.9, 0);
           renderer.render(scene, camera);
-          frame = requestAnimationFrame(animate);
         };
         setModelState("ready");
-        frame = requestAnimationFrame(animate);
+        if (allowXr) {
+          xrRendererRef.current = renderer.xr;
+          renderer.setAnimationLoop(animate);
+        } else {
+          const loop = () => {
+            if (disposed) return;
+            animate();
+            frame = requestAnimationFrame(loop);
+          };
+          frame = requestAnimationFrame(loop);
+        }
         cleanup = () => {
           observer.disconnect();
           window.removeEventListener("pointermove", onPointer);
+          renderer.setAnimationLoop(null);
+          xrRendererRef.current = null;
           renderer.dispose();
         };
       } catch (error) {
@@ -318,13 +357,51 @@ export function G1Humanoid({
     }
     void mount();
     return () => { disposed = true; cancelAnimationFrame(frame); cleanup(); };
-  }, [urdfUrl]);
+  }, [urdfUrl, allowXr]);
+
+  async function enterXr(mode: XrMode) {
+    const xr = navigator.xr;
+    const webxr = xrRendererRef.current;
+    if (!xr || !webxr) {
+      setXrNote("Robot is still loading. Wait a moment, then launch XR.");
+      return;
+    }
+    setXrBusy(mode);
+    setXrNote(null);
+    try {
+      const optional =
+        mode === "immersive-ar"
+          ? ["local-floor", "dom-overlay", "hit-test"]
+          : ["local-floor", "bounded-floor", "hand-tracking"];
+      const session = await xr.requestSession(mode, { optionalFeatures: optional });
+      await webxr.setSession(session);
+    } catch (error) {
+      setXrNote(error instanceof Error ? error.message : "Could not start the XR session.");
+    } finally {
+      setXrBusy(null);
+    }
+  }
 
   return (
     <div className={`tp-bot ${variant} mood-${mood} expr-${expression} ${className}`} data-spline={modelState} aria-label={ariaLabel}>
       <canvas ref={canvasRef} className="tp-bot-spline" aria-hidden />
       {modelState === "loading" && <div className="tp-bot-loading" aria-hidden>{loading}</div>}
       {modelState === "fallback" && fallback}
+      {allowXr && (
+        <div className="tp-xr-dock">
+          {xrSupport.vr && (
+            <button type="button" className="tp-xr-launch" disabled={xrBusy !== null} onClick={() => void enterXr("immersive-vr")}>
+              {xrBusy === "immersive-vr" ? "Starting VR…" : "Launch in VR"}
+            </button>
+          )}
+          {xrSupport.ar && (
+            <button type="button" className="tp-xr-launch" disabled={xrBusy !== null} onClick={() => void enterXr("immersive-ar")}>
+              {xrBusy === "immersive-ar" ? "Starting AR…" : "Launch in AR"}
+            </button>
+          )}
+          {xrNote && <p className="tp-xr-note">{xrNote}</p>}
+        </div>
+      )}
     </div>
   );
 }

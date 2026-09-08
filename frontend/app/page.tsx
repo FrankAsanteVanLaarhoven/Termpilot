@@ -1449,8 +1449,11 @@ function Settings({
               </button>
             ))}
           </div>
-          <a className="mt-2 block text-xs text-cyan" href="/sdk/termpilot.js" download>
-            Download offline SDK
+          <a className="mt-2 block text-xs text-cyan" href="/sdk">
+            Install on this device · SDK · WebXR
+          </a>
+          <a className="mt-2 block text-xs text-cyan" href="/sdk/termpilot-icon.png" download="TermPilot-G1.png">
+            Download G1 robot icon
           </a>
         </div>
         <label className="block text-xs">

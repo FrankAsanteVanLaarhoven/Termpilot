@@ -14,11 +14,13 @@ export function GrokHumanoid({
   expression = "idle",
   variant = "stage",
   className = "",
+  allowXr = false,
 }: {
   mood?: BotMood;
   expression?: GrokExpression;
   variant?: "splash" | "stage" | "compact";
   className?: string;
+  allowXr?: boolean;
 }) {
   const { tr } = useI18n();
   return (
@@ -28,6 +30,7 @@ export function GrokHumanoid({
       variant={variant}
       className={className}
       urdfUrl={URDF_HUMANOID}
+      allowXr={allowXr}
       ariaLabel={`${tr("grokbot.name")} interactive humanoid`}
       loading={
         <Image

@@ -822,6 +822,85 @@ button.tp-logo:focus-visible .tp-logo-word {
   font-size: 10px;
 }
 
+.tp-xr-page {
+  min-height: 100vh;
+  background: #05070a;
+  color: var(--tp-ink);
+}
+.tp-xr-bar {
+  position: relative;
+  z-index: 6;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+}
+.tp-bot.tp-xr-stage {
+  position: fixed;
+  inset: 0;
+  min-height: 100vh;
+  height: 100vh;
+}
+.tp-xr-dock {
+  position: absolute;
+  z-index: 8;
+  left: 50%;
+  bottom: 28px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  width: min(92vw, 520px);
+  transform: translateX(-50%);
+}
+.tp-xr-launch {
+  border: 1px solid var(--tp-cyan);
+  background: rgba(5, 7, 10, 0.78);
+  color: var(--tp-cyan);
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-size: 13px;
+}
+.tp-xr-launch:disabled {
+  opacity: 0.55;
+}
+.tp-xr-note {
+  width: 100%;
+  text-align: center;
+  font-size: 12px;
+  color: var(--tp-mute);
+}
+.tp-xr-install {
+  position: fixed;
+  z-index: 8;
+  right: 16px;
+  top: 16px;
+  max-width: 280px;
+}
+.tp-install {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px solid var(--tp-steel);
+  border-radius: 18px;
+  background: var(--tp-panel);
+}
+.tp-install img {
+  border-radius: 14px;
+  border: 1px solid var(--tp-steel);
+}
+.tp-install.is-compact {
+  padding: 8px;
+  background: rgba(5, 7, 10, 0.72);
+}
+.tp-install-hint {
+  margin: 0;
+  font-size: 12px;
+  color: var(--tp-mute);
+  line-height: 1.45;
+}
+
 @keyframes tp-drift {
   from {
     transform: scale(1.04) translate3d(-1.5%, 0, 0);

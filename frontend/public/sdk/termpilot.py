@@ -9,6 +9,7 @@ import urllib.request
 class TermPilot:
     def __init__(self, base: str = "http://127.0.0.1:8000") -> None:
         self.base = base.rstrip("/")
+        self.icon = "/sdk/termpilot-icon.png"
 
     def _get(self, path: str) -> object:
         with urllib.request.urlopen(self.base + path) as response:

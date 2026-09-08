@@ -1,14 +1,23 @@
 {
+  "id": "/",
   "name": "TermPilot",
   "short_name": "TermPilot",
-  "description": "Verified control tower for student life",
+  "description": "Verified student control tower. Install on this device and launch the G1 robot in web or XR.",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "browser"],
+  "orientation": "any",
   "background_color": "#05070a",
   "theme_color": "#05070a",
+  "lang": "en",
+  "categories": ["education", "productivity"],
+  "launch_handler": { "client_mode": ["navigate-existing", "auto"] },
   "icons": [
     { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "/icons/icon-1024.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any" },
     { "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
   ]
 }
