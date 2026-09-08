@@ -441,6 +441,12 @@
     </inertial>
     <visual>
       <geometry>
+        <mesh filename="assets/visuals/mic_well.STL"/>
+      </geometry>
+      <material name="dark_metal"/>
+    </visual>
+    <visual>
+      <geometry>
         <mesh filename="assets/visuals/mic_button.STL"/>
       </geometry>
       <material name="favl_neon"/>

@@ -32,14 +32,18 @@ LOGO_W = 0.102
 LOGO_H = 0.063
 RADIUS = 0.00255
 RADIAL = 16
-# Belly-button hexagon, lower torso. Sit it proud of the chest skin (x≈0.0836)
-# so it is a real pressable jewel, not a mark trapped inside the torso mesh.
+# Belly-button hexagon, lower torso. Carved socket behind the chest skin
+# (x≈0.0836); the gem sits in that well so it reads as armor, not a sticker.
 MIC_Z = 0.118
-MIC_R = 0.0175
-MIC_BACK = 0.079
-MIC_FRONT = 0.089
+WELL_R = 0.022
+WELL_BACK = 0.0718
+WELL_RIM = 0.0814
+MIC_R = 0.0118
+MIC_BACK = 0.0742
+MIC_FRONT = 0.0806
 HEADER = b"FAVL inlaid chest mark - TermPilot / Frank Van Laarhoven"
 MIC_OUT = VISUALS / "mic_button.STL"
+WELL_OUT = VISUALS / "mic_well.STL"
 
 
 def _sub(a: tuple[float, float, float], b: tuple[float, float, float]) -> tuple[float, float, float]:
@@ -299,6 +303,7 @@ def add_hexagon_prism(
     radius: float,
     x0: float,
     x1: float,
+    jewel: bool = False,
 ) -> None:
     front: list[tuple[float, float, float]] = []
     back: list[tuple[float, float, float]] = []
@@ -315,7 +320,41 @@ def add_hexagon_prism(
         tris.append((bc, back[j], back[i]))
         tris.append((front[i], back[i], back[j]))
         tris.append((front[i], back[j], front[j]))
-    add_sphere(tris, fc, radius * 0.18)
+    if jewel:
+        add_sphere(tris, fc, radius * 0.16)
+
+
+def add_hexagon_ring(
+    tris: list,
+    cy: float,
+    cz: float,
+    r_inner: float,
+    r_outer: float,
+    x0: float,
+    x1: float,
+) -> None:
+    """Raised lip around the navel well, still behind the chest skin."""
+    inner: list[tuple[float, float, float]] = []
+    outer: list[tuple[float, float, float]] = []
+    inner_b: list[tuple[float, float, float]] = []
+    outer_b: list[tuple[float, float, float]] = []
+    for i in range(6):
+        ang = math.pi / 6 + i * math.pi / 3
+        c, s = math.cos(ang), math.sin(ang)
+        inner.append((x1, cy + r_inner * c, cz + r_inner * s))
+        outer.append((x1, cy + r_outer * c, cz + r_outer * s))
+        inner_b.append((x0, cy + r_inner * c, cz + r_inner * s))
+        outer_b.append((x0, cy + r_outer * c, cz + r_outer * s))
+    for i in range(6):
+        j = (i + 1) % 6
+        tris.append((outer[i], outer[j], inner[j]))
+        tris.append((outer[i], inner[j], inner[i]))
+        tris.append((outer_b[i], inner_b[i], inner_b[j]))
+        tris.append((outer_b[i], inner_b[j], outer_b[j]))
+        tris.append((outer[i], outer_b[i], outer_b[j]))
+        tris.append((outer[i], outer_b[j], outer[j]))
+        tris.append((inner[i], inner[j], inner_b[j]))
+        tris.append((inner[i], inner_b[j], inner_b[i]))
 
 
 def build_letters() -> list[tuple]:
@@ -383,9 +422,14 @@ def main() -> None:
     plate = build_plate()
     write_stl(OUT, letters)
     write_stl(PLATE, plate, b"FAVL chest plaque")
+    well: list = []
+    add_hexagon_prism(well, (WELL_BACK + WELL_RIM) / 2, 0.0, MIC_Z, WELL_R, WELL_BACK, WELL_RIM - 0.0016, jewel=False)
+    add_hexagon_ring(well, 0.0, MIC_Z, MIC_R + 0.0016, WELL_R, WELL_RIM - 0.0018, WELL_RIM)
+    write_stl(WELL_OUT, well, b"FAVL chest mic well")
     mic: list = []
-    add_hexagon_prism(mic, (MIC_BACK + MIC_FRONT) / 2, 0.0, MIC_Z, MIC_R, MIC_BACK, MIC_FRONT)
+    add_hexagon_prism(mic, (MIC_BACK + MIC_FRONT) / 2, 0.0, MIC_Z, MIC_R, MIC_BACK, MIC_FRONT, jewel=True)
     write_stl(MIC_OUT, mic, b"FAVL chest mic hex")
+    print(f"mic gem tris={len(mic)} well tris={len(well)}")
     y0, y1, z0, z1 = plate_bounds()
     collision: list = []
     add_box(collision, (PLATE_BACK, y0, z0), (BEZEL_FRONT + RADIUS, y1, z1))

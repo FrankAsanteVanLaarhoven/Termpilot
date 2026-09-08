@@ -209,7 +209,9 @@ export function G1Humanoid({
         robot.traverse((node) => {
           if (!(node instanceof THREE.Mesh)) return;
           if (ownedBy(node, "mic_button_link")) {
-            node.material = micMat;
+            const count = node.geometry.getAttribute("position")?.count ?? 0;
+            // Gem has the cap sphere; the carved well is a plain hex socket.
+            node.material = count > 400 ? micMat : plaque;
             node.castShadow = true;
             node.receiveShadow = true;
             return;
@@ -239,9 +241,8 @@ export function G1Humanoid({
         const micLink = robot.links.mic_button_link;
         const micAim = new THREE.Object3D();
         micAim.name = "mic_hit";
-        // URDF +X is out of the chest. Park a wide disc just in front of the
-        // navel jewel so a finger/cursor can actually hit it at full-body scale.
-        micAim.position.set(0.094, 0, 0.118);
+        // Invisible hit disc at the chest skin so the inset navel is still tappable.
+        micAim.position.set(0.084, 0, 0.118);
         micAim.rotation.y = Math.PI / 2;
         const micDisc = new THREE.Mesh(
           new THREE.CircleGeometry(0.048, 24),
