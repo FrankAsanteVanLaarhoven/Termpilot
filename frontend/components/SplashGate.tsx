@@ -100,7 +100,6 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
   const [talking, setTalking] = useState(false);
   const [turning, setTurning] = useState(false);
   const [micOn, setMicOn] = useState(false);
-  const [hostLine, setHostLine] = useState("");
   const typingTimer = useRef<number | null>(null);
   const recognitionRef = useRef<{ start: () => void; stop: () => void } | null>(null);
   const greetedRef = useRef(false);
@@ -149,7 +148,6 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
   function say(next: GrokCue, text: string, voice = false) {
     setCue(next);
     if (!voice) return;
-    setHostLine(text);
     if (!voiceUnlocked()) {
       pendingLine.current = text;
       return;
@@ -169,7 +167,6 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
       pendingLine.current ??
       "Hi. I'm the G1 we engineered for TermPilot. Press the button in my chest if you want me to help you in.";
     pendingLine.current = null;
-    setHostLine(line);
     speak(
       line,
       () => setTalking(true),
@@ -217,14 +214,7 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
       (window as unknown as { SpeechRecognition?: new () => { start: () => void; stop: () => void; onresult: ((ev: { results: { [i: number]: { [j: number]: { transcript: string } } } }) => void) | null; onend: (() => void) | null; lang: string; interimResults: boolean } }).SpeechRecognition ||
       (window as unknown as { webkitSpeechRecognition?: new () => { start: () => void; stop: () => void; onresult: ((ev: { results: { [i: number]: { [j: number]: { transcript: string } } } }) => void) | null; onend: (() => void) | null; lang: string; interimResults: boolean } }).webkitSpeechRecognition;
     if (!Rec) {
-      say("point", "I can't hear this browser. Tap Try the demo on the right, or type your campus email to sign in.", true);
-      return;
-    }
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach((track) => track.stop());
-    } catch {
-      say("point", "I need the microphone to hear you. You can also tap Try the demo, or type your campus email on the right.", true);
+      say("point", "This browser cannot hear you. Tap Try the demo on the right.", true);
       return;
     }
     const rec = new Rec();
@@ -244,16 +234,15 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
     recognitionRef.current = rec;
     setMicOn(true);
     setCue("listen");
-    setHostLine("I'm listening. Say demo, or say sign in.");
     try {
       rec.start();
     } catch {
       setMicOn(false);
-      say("point", "Could not start the microphone. Tap Try the demo on the right.", true);
+      say("no", "The microphone did not start.", true);
     }
   }
 
-  function pressChest() {
+  async function pressChest() {
     unlockVoice();
     greetedRef.current = true;
     pendingLine.current = null;
@@ -262,17 +251,21 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
       setMicOn(false);
       listenAfterTalk.current = false;
       setCue("idle");
-      setHostLine("");
       return;
     }
-    const question =
-      "Shall I open the demo, or do you want to sign in? Say demo and I'll take you in. Or say sign in, and type your university email on the right.";
-    listenAfterTalk.current = true;
     setCue("hello");
-    setHostLine(question);
     setTalking(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach((track) => track.stop());
+    } catch {
+      setTalking(false);
+      say("no", "Allow the microphone when your browser asks, and I can hear you.", true);
+      return;
+    }
+    listenAfterTalk.current = true;
     speak(
-      question,
+      "Shall I open the demo, or do you want to sign in? Say demo and I'll take you in. Or say sign in, and type your university email on the right.",
       () => setTalking(true),
       () => {
         setTalking(false);
@@ -509,13 +502,8 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
           speaking={talking}
           turning={turning}
           micActive={micOn}
-          onMic={pressChest}
+          onMic={() => void pressChest()}
         />
-        {hostLine && (
-          <p className="tp-g1-caption" aria-live="assertive">
-            {hostLine}
-          </p>
-        )}
       </div>
 
       <aside
@@ -558,9 +546,6 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
             >
               {signingIn || preparing ? "Opening demo…" : tr("splash.demo")}
             </button>
-            <p className="tp-splash-hint">
-              {micOn ? "Listening…" : "Press the button in the G1’s chest — it will ask you what to do."}
-            </p>
             <p className="tp-splash-hint">{tr("splash.members")}</p>
             <form
               className="tp-login"
