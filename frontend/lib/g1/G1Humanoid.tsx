@@ -303,61 +303,53 @@ export function G1Humanoid({
           const active = moodRef.current === "speaking" || expressionRef.current === "glad";
           const listening = moodRef.current === "listening" || expressionRef.current === "listen";
           const thinking = moodRef.current === "processing" || expressionRef.current === "think";
-          const welcome = expressionRef.current === "welcome";
           const breath = Math.sin(t * 1.55) * 0.025;
-          const greetPulse = t < 4.8 || (t % 16 > 0 && t % 16 < 2.5);
-          greetMix += ((fullBody && welcome && greetPulse && !p.overSignin ? 1 : 0) - greetMix) * 0.07;
-          pointMix += ((fullBody && p.overSignin ? 1 : 0) - pointMix) * 0.09;
-          const wave = Math.sin(t * 8.5) * 0.5 + 0.5;
-          const march = fullBody ? 0.2 * (1 - pointMix * 0.55) : active ? 0.045 : 0.012;
-          const cycle = t * (fullBody ? 2.35 : active ? 2.2 : 0.75);
-          const stepL = Math.sin(cycle) * march;
-          const stepR = Math.sin(cycle + Math.PI) * march;
-          const sideShift = Math.sin(t * 0.55) * (fullBody ? 0.03 : 0.01);
-          const turn = THREE.MathUtils.clamp(
-            (fullBody ? p.x * 0.2 + pointMix * 0.22 : Math.sin(t * 0.42) * 0.02) + Math.sin(t * 0.5) * (fullBody ? 0.05 : 0),
-            -0.38,
-            0.42,
-          );
+          const gesture = active ? Math.sin(t * 3.1) * 0.23 : listening ? 0.16 : Math.sin(t * 0.72) * 0.035;
+          const greetPulse = t < 6 || (t % 11 > 0 && t % 11 < 3.2);
+          greetMix += ((fullBody && greetPulse && !p.overSignin ? 1 : 0) - greetMix) * 0.12;
+          pointMix += ((fullBody && p.overSignin ? 1 : 0) - pointMix) * 0.14;
+          const g = greetMix;
+          const pt = pointMix;
+          const idle = Math.max(0, 1 - g - pt);
+          const wave = Math.sin(t * 10) * 0.5 + 0.5;
+          const hipSway = Math.sin(t * 1.1) * 0.045;
+          const turn = THREE.MathUtils.clamp(p.x * (fullBody ? 0.28 : 0.08) + pt * 0.32, -0.45, 0.5);
 
-          setJoint("waist_yaw_joint", turn);
+          setJoint("waist_yaw_joint", turn + Math.sin(t * 0.7) * 0.04 * idle);
 
-          const idleLPitch = -0.12 + breath - (active ? Math.sin(t * 3.1) * 0.1 : 0) - p.y * 0.08;
-          const idleRPitch = -0.12 - breath + (active ? Math.sin(t * 3.1) * 0.23 : Math.sin(t * 0.72) * 0.035) - p.y * 0.08;
           setJoint(
             "left_shoulder_pitch_joint",
-            idleLPitch * (1 - pointMix - greetMix) + -0.28 * pointMix + -0.18 * greetMix,
+            (-0.12 + breath - gesture * 0.4 - p.y * 0.08) * idle + -0.55 * pt + -0.2 * g,
           );
           setJoint(
             "right_shoulder_pitch_joint",
-            idleRPitch * (1 - greetMix - pointMix * 0.4) + -1.22 * greetMix + -0.12 * pointMix,
+            (-0.12 - breath + gesture - p.y * 0.08) * idle + -0.35 * g + -0.15 * pt,
           );
-          setJoint("left_shoulder_roll_joint", 0.14 + p.x * 0.1 + 0.92 * pointMix + 0.08 * greetMix);
-          setJoint("right_shoulder_roll_joint", -0.14 + p.x * 0.08 - 0.62 * greetMix);
-          setJoint("left_shoulder_yaw_joint", p.x * -0.12 + 0.42 * pointMix + Math.sin(t * 0.9) * 0.03);
-          setJoint("right_shoulder_yaw_joint", p.x * -0.12 + 0.18 * greetMix - Math.sin(t * 0.9) * 0.03);
-          setJoint("left_elbow_joint", 0.3 * (1 - pointMix) + 0.12 * pointMix + Math.abs(stepL) * 0.15);
-          setJoint("right_elbow_joint", 0.28 + 0.7 * greetMix * (0.45 + wave * 0.7) + (active ? 0.2 : 0));
-          setJoint("left_wrist_roll_joint", Math.sin(t * 1.15) * 0.11 + 0.15 * pointMix);
-          setJoint("right_wrist_roll_joint", Math.sin(t * 1.15 + Math.PI) * 0.11 + (wave * 1.1 - 0.55) * greetMix);
-          setJoint("left_wrist_pitch_joint", p.y * -0.12 + 0.18 * pointMix);
-          setJoint("right_wrist_pitch_joint", p.y * -0.12 + 0.2 * greetMix);
-          setJoint("left_wrist_yaw_joint", p.x * 0.12 + 0.45 * pointMix);
-          setJoint("right_wrist_yaw_joint", p.x * 0.12 + 0.25 * greetMix);
+          setJoint("left_shoulder_roll_joint", (0.14 + p.x * 0.1) * idle + 1.15 * pt + 0.2 * g);
+          setJoint("right_shoulder_roll_joint", (-0.14 + p.x * 0.08) * idle + -1.35 * g + -0.2 * pt);
+          setJoint("left_shoulder_yaw_joint", p.x * -0.12 * idle + 0.55 * pt);
+          setJoint("right_shoulder_yaw_joint", p.x * -0.12 * idle + 0.25 * g);
+          setJoint("left_elbow_joint", (0.3 + Math.abs(gesture) * 0.42) * idle + 0.2 * pt + 0.35 * g);
+          setJoint("right_elbow_joint", (0.3 + (active ? 0.48 : 0.15)) * idle + (0.9 + wave * 0.85) * g + 0.35 * pt);
+          setJoint("left_wrist_roll_joint", Math.sin(t * 1.15) * 0.11 * idle + 0.2 * pt);
+          setJoint("right_wrist_roll_joint", Math.sin(t * 1.15 + Math.PI) * 0.11 * idle + (wave * 1.6 - 0.8) * g);
+          setJoint("left_wrist_pitch_joint", p.y * -0.12 * idle + 0.25 * pt);
+          setJoint("right_wrist_pitch_joint", p.y * -0.12 * idle + 0.2 * g);
+          setJoint("left_wrist_yaw_joint", p.x * 0.12 * idle + 0.5 * pt);
+          setJoint("right_wrist_yaw_joint", p.x * 0.12 * idle + 0.35 * g);
 
-          setJoint("left_hip_pitch_joint", -0.08 + stepL + breath * 0.2);
-          setJoint("right_hip_pitch_joint", -0.08 + stepR - breath * 0.2);
-          setJoint("left_hip_roll_joint", sideShift + turn * 0.12);
-          setJoint("right_hip_roll_joint", sideShift + turn * 0.12);
-          setJoint("left_hip_yaw_joint", p.x * 0.045 + turn * 0.2);
-          setJoint("right_hip_yaw_joint", p.x * 0.045 + turn * 0.2);
-          setJoint("left_knee_joint", 0.16 + Math.max(0, -stepL) * 1.15);
-          setJoint("right_knee_joint", 0.16 + Math.max(0, -stepR) * 1.15);
-          setJoint("left_ankle_pitch_joint", stepL * -0.45);
-          setJoint("right_ankle_pitch_joint", stepR * -0.45);
-          setJoint("left_ankle_roll_joint", sideShift * -0.5);
-          setJoint("right_ankle_roll_joint", sideShift * -0.5);
-          robot.rotation.y += (turn * 0.65 - robot.rotation.y) * 0.08;
+          setJoint("left_hip_pitch_joint", -0.06 + hipSway + breath * 0.15);
+          setJoint("right_hip_pitch_joint", -0.06 - hipSway - breath * 0.15);
+          setJoint("left_hip_roll_joint", turn * 0.08);
+          setJoint("right_hip_roll_joint", turn * 0.08);
+          setJoint("left_hip_yaw_joint", turn * 0.12);
+          setJoint("right_hip_yaw_joint", turn * 0.12);
+          setJoint("left_knee_joint", 0.12 + Math.abs(hipSway) * 0.4);
+          setJoint("right_knee_joint", 0.12 + Math.abs(hipSway) * 0.4);
+          setJoint("left_ankle_pitch_joint", -hipSway * 0.3);
+          setJoint("right_ankle_pitch_joint", hipSway * 0.3);
+          setJoint("left_ankle_roll_joint", 0);
+          setJoint("right_ankle_roll_joint", 0);
           // Screen: +x is cursor right, +y is cursor down. URDF head: +X face,
           // +Y left, +Z up. Yaw around Z, pitch (nod) around Y — never roll
           // around X, which previously swung the helmet off the neck.
