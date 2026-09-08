@@ -429,6 +429,24 @@
     </visual>
       </link>
 
+  <joint name="mic_joint" type="fixed">
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+    <parent link="torso_link"/>
+    <child link="mic_button_link"/>
+  </joint>
+  <link name="mic_button_link">
+    <inertial>
+      <mass value="0.001"/>
+      <inertia ixx="1e-7" ixy="0" ixz="0" iyy="1e-7" iyz="0" izz="1e-7"/>
+    </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="assets/visuals/mic_button.STL"/>
+      </geometry>
+      <material name="favl_neon"/>
+    </visual>
+      </link>
+
   <!-- Head -->
   <link name="head_link">
     <inertial>

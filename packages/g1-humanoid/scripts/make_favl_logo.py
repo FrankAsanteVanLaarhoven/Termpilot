@@ -15,17 +15,23 @@ COLLISION = (
     ROOT / "frontend" / "public" / "robot" / "g1" / "assets" / "collisions" / "logo_link_collision.STL"
 )
 
-# Embed in the torso nameplate band (torso front at z~0.27 is x≈0.062, not the belly).
-CHEST_X = 0.0618
-PLATE_BACK = 0.0572
-PLATE_FRONT = 0.0624
-Z0 = 0.248
-LETTER_W = 0.0185
-LETTER_H = 0.024
-GAP = 0.0054
-RADIUS = 0.00215
+# Mid-chest plate (z~0.18, surface x≈0.083). Carve a pocket and sit letters in it.
+CHEST_X = 0.0774
+PLATE_BACK = 0.0735
+PLATE_FRONT = 0.0816
+Z0 = 0.168
+LETTER_W = 0.021
+LETTER_H = 0.028
+GAP = 0.006
+RADIUS = 0.00235
 RADIAL = 14
+# Belly-button hexagon, lower torso.
+MIC_Z = 0.118
+MIC_R = 0.0115
+MIC_BACK = 0.068
+MIC_FRONT = 0.0765
 HEADER = b"FAVL inlaid chest mark - TermPilot / Frank Van Laarhoven"
+MIC_OUT = VISUALS / "mic_button.STL"
 
 
 def _sub(a: tuple[float, float, float], b: tuple[float, float, float]) -> tuple[float, float, float]:
@@ -195,6 +201,33 @@ def build_plate() -> list[tuple]:
     return tris
 
 
+def add_hexagon_prism(
+    tris: list,
+    cx: float,
+    cy: float,
+    cz: float,
+    radius: float,
+    x0: float,
+    x1: float,
+) -> None:
+    front: list[tuple[float, float, float]] = []
+    back: list[tuple[float, float, float]] = []
+    for i in range(6):
+        ang = math.pi / 6 + i * math.pi / 3
+        y = cy + radius * math.cos(ang)
+        z = cz + radius * math.sin(ang)
+        front.append((x1, y, z))
+        back.append((x0, y, z))
+    fc, bc = (x1, cy, cz), (x0, cy, cz)
+    for i in range(6):
+        j = (i + 1) % 6
+        tris.append((fc, front[i], front[j]))
+        tris.append((bc, back[j], back[i]))
+        tris.append((front[i], back[i], back[j]))
+        tris.append((front[i], back[j], front[j]))
+    add_sphere(tris, fc, radius * 0.18)
+
+
 def build_letters() -> list[tuple]:
     tris: list = []
     for index, strokes in enumerate(GLYPHS):
@@ -223,6 +256,9 @@ def main() -> None:
     plate = build_plate()
     write_stl(OUT, letters)
     write_stl(PLATE, plate, b"FAVL chest plaque")
+    mic: list = []
+    add_hexagon_prism(mic, (MIC_BACK + MIC_FRONT) / 2, 0.0, MIC_Z, MIC_R, MIC_BACK, MIC_FRONT)
+    write_stl(MIC_OUT, mic, b"FAVL chest mic hex")
     total = 4 * LETTER_W + 3 * GAP
     collision: list = []
     add_box(

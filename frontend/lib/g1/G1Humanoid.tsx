@@ -24,6 +24,8 @@ export function G1Humanoid({
   cue = "idle",
   speaking = false,
   turning = false,
+  micActive = false,
+  onMic,
 }: {
   mood?: G1Mood | string;
   expression?: G1Expression | string;
@@ -37,6 +39,8 @@ export function G1Humanoid({
   cue?: G1Cue | string;
   speaking?: boolean;
   turning?: boolean;
+  micActive?: boolean;
+  onMic?: () => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const moodRef = useRef(mood);
@@ -44,6 +48,8 @@ export function G1Humanoid({
   const cueRef = useRef(cue);
   const speakingRef = useRef(speaking);
   const turningRef = useRef(turning);
+  const micActiveRef = useRef(micActive);
+  const onMicRef = useRef(onMic);
   const pointerRef = useRef<Pointer>({ x: 0, y: 0, overSignin: false });
   const xrRendererRef = useRef<{
     setSession: (session: XRSession) => Promise<void>;
@@ -58,6 +64,8 @@ export function G1Humanoid({
   cueRef.current = cue;
   speakingRef.current = speaking;
   turningRef.current = turning;
+  micActiveRef.current = micActive;
+  onMicRef.current = onMic;
 
   useEffect(() => {
     if (!allowXr) return;
@@ -180,6 +188,14 @@ export function G1Humanoid({
           emissive: 0x021018,
           emissiveIntensity: 0.2,
         });
+        const micMat = new THREE.MeshStandardMaterial({
+          color: 0x00e5ff,
+          emissive: 0x00d4ff,
+          emissiveIntensity: 3.8,
+          metalness: 0.25,
+          roughness: 0.18,
+          toneMapped: false,
+        });
         const ownedBy = (node: import("three").Object3D, name: string) => {
           let current: import("three").Object3D | null = node;
           while (current) {
@@ -191,6 +207,12 @@ export function G1Humanoid({
         let meshIndex = 0;
         robot.traverse((node) => {
           if (!(node instanceof THREE.Mesh)) return;
+          if (ownedBy(node, "mic_button_link")) {
+            node.material = micMat;
+            node.castShadow = true;
+            node.receiveShadow = true;
+            return;
+          }
           if (ownedBy(node, "logo_link")) {
             const count = node.geometry.getAttribute("position")?.count ?? 0;
             node.material = count > 4000 ? neon : plaque;
@@ -208,9 +230,9 @@ export function G1Humanoid({
         });
         robot.userData.mark = "FAVL";
         const logo = robot.links.logo_link;
-        const logoLight = new THREE.PointLight(0x33f0ff, 11, 0.7, 1.45);
+        const logoLight = new THREE.PointLight(0x33f0ff, 3.2, 0.16, 2);
         if (logo) {
-          logoLight.position.set(0.064, 0, 0.26);
+          logoLight.position.set(0.082, 0, 0.182);
           logo.add(logoLight);
         }
 
@@ -322,6 +344,21 @@ export function G1Humanoid({
           };
         };
         window.addEventListener("pointermove", onPointer, { passive: true });
+        const raycaster = new THREE.Raycaster();
+        const ndc = new THREE.Vector2();
+        const onCanvasClick = (event: PointerEvent) => {
+          const box = canvasEl.getBoundingClientRect();
+          if (box.width < 1 || box.height < 1) return;
+          ndc.x = ((event.clientX - box.left) / box.width) * 2 - 1;
+          ndc.y = -((event.clientY - box.top) / box.height) * 2 + 1;
+          raycaster.setFromCamera(ndc, camera);
+          const hits = raycaster.intersectObject(pivot, true);
+          if (hits.some((hit) => ownedBy(hit.object, "mic_button_link"))) {
+            event.stopPropagation();
+            onMicRef.current?.();
+          }
+        };
+        canvasEl.addEventListener("pointerdown", onCanvasClick);
 
         const clock = new THREE.Clock();
         let pointMix = 0;
@@ -395,11 +432,11 @@ export function G1Humanoid({
             (0.3 + (active ? 0.48 : 0.15)) * idle + (1.15 + wave * 0.55) * g + 0.35 * pt + 0.4 * inviteMix,
           );
           setJoint("left_wrist_roll_joint", Math.sin(t * 1.15) * 0.11 * idle + 0.2 * pt);
-          setJoint("right_wrist_roll_joint", Math.sin(t * 1.15 + Math.PI) * 0.11 * idle + (wave * 1.35 - 0.65) * g);
+          setJoint("right_wrist_roll_joint", 0);
           setJoint("left_wrist_pitch_joint", p.y * -0.12 * idle + 0.25 * pt);
-          setJoint("right_wrist_pitch_joint", p.y * -0.12 * idle + 0.2 * g);
+          setJoint("right_wrist_pitch_joint", 0);
           setJoint("left_wrist_yaw_joint", p.x * 0.12 * idle + 0.5 * pt);
-          setJoint("right_wrist_yaw_joint", p.x * 0.12 * idle + (0.25 + wave * 0.55) * g);
+          setJoint("right_wrist_yaw_joint", 0);
 
           setJoint("left_hip_pitch_joint", -0.06 + hipSway + breath * 0.15);
           setJoint("right_hip_pitch_joint", -0.06 - hipSway - breath * 0.15);
@@ -446,22 +483,29 @@ export function G1Humanoid({
           key.position.z = 1.35 - p.x * 0.3;
           key.position.y = 2.6 - p.y * 0.16;
           rim.intensity = 24 + Math.sin(t * 1.2) * 2.4 + (active ? 6 : 0);
-          const talking = speakingRef.current || g > 0.55;
+          const talking = speakingRef.current;
           const vu = talking
             ? 0.4 + 0.6 * Math.abs(Math.sin(t * 17)) * (0.55 + 0.45 * Math.abs(Math.sin(t * 29)))
             : 0;
           if (talking) {
             neon.color.setHex(0x22ff66);
             neon.emissive.setHex(0x3ddc97);
-            neon.emissiveIntensity = 3.4 + vu * 9;
-            logoLight.color.setHex(0x3ddc97);
-            logoLight.intensity = 7 + vu * 20;
+            neon.emissiveIntensity = 4 + vu * 8;
           } else {
             neon.color.setHex(0x00e5ff);
             neon.emissive.setHex(0x00d4ff);
-            neon.emissiveIntensity = 4.6 + Math.sin(t * 2.15) * 0.9;
-            logoLight.color.setHex(0x33f0ff);
-            logoLight.intensity = 9.5 + Math.sin(t * 2.15) * 2.4;
+            neon.emissiveIntensity = 5.2 + Math.sin(t * 2.15) * 0.8;
+          }
+          logoLight.color.setHex(0x33f0ff);
+          logoLight.intensity = 2.4 + Math.sin(t * 2.15) * 0.6;
+          if (micActiveRef.current) {
+            micMat.color.setHex(0x22ff66);
+            micMat.emissive.setHex(0x3ddc97);
+            micMat.emissiveIntensity = 4.2 + vu * 5;
+          } else {
+            micMat.color.setHex(0x00e5ff);
+            micMat.emissive.setHex(0x00d4ff);
+            micMat.emissiveIntensity = 3.6 + Math.sin(t * 2.15) * 0.7;
           }
           fill.position.z = -1.7 - p.x * 0.18;
           spot.position.set(2.35, 1.72 - p.y * 0.5, -p.x * 0.9);
@@ -484,6 +528,7 @@ export function G1Humanoid({
         cleanup = () => {
           observer.disconnect();
           window.removeEventListener("pointermove", onPointer);
+          canvasEl.removeEventListener("pointerdown", onCanvasClick);
           renderer.setAnimationLoop(null);
           xrRendererRef.current = null;
           renderer.dispose();

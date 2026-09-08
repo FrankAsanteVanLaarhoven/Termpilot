@@ -19,6 +19,8 @@ export function GrokHumanoid({
   cue = "idle",
   speaking = false,
   turning = false,
+  micActive = false,
+  onMic,
 }: {
   mood?: BotMood;
   expression?: GrokExpression;
@@ -28,6 +30,8 @@ export function GrokHumanoid({
   cue?: GrokCue;
   speaking?: boolean;
   turning?: boolean;
+  micActive?: boolean;
+  onMic?: () => void;
 }) {
   const { tr } = useI18n();
   return (
@@ -41,6 +45,8 @@ export function GrokHumanoid({
       cue={cue}
       speaking={speaking}
       turning={turning}
+      micActive={micActive}
+      onMic={onMic}
       ariaLabel={`${tr("grokbot.name")} interactive humanoid`}
       loading={
         <Image

@@ -97,10 +97,11 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
   const [returning, setReturning] = useState<{ email: string; displayName: string } | null>(null);
   const [overCard, setOverCard] = useState(false);
   const [cue, setCue] = useState<GrokCue>("hello");
-  const [line, setLine] = useState("Hi — I'm the G1 we engineered for TermPilot.");
   const [talking, setTalking] = useState(false);
   const [turning, setTurning] = useState(false);
+  const [micOn, setMicOn] = useState(false);
   const typingTimer = useRef<number | null>(null);
+  const recognitionRef = useRef<{ start: () => void; stop: () => void } | null>(null);
 
   useEffect(() => {
     const id = window.setTimeout(() => setReady(true), 240);
@@ -114,6 +115,7 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
       window.clearTimeout(id);
       window.clearTimeout(bye);
       if (typingTimer.current) window.clearTimeout(typingTimer.current);
+      recognitionRef.current?.stop();
       silence();
     };
   }, []);
@@ -140,7 +142,6 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
 
   function say(next: GrokCue, text: string, voice = false) {
     setCue(next);
-    setLine(text);
     if (!voice) return;
     speak(
       text,
@@ -153,6 +154,42 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
     setTurning(true);
     if (typingTimer.current) window.clearTimeout(typingTimer.current);
     typingTimer.current = window.setTimeout(() => setTurning(false), 1600);
+  }
+
+  function toggleMic() {
+    const Rec =
+      (window as unknown as { SpeechRecognition?: new () => { start: () => void; stop: () => void; onresult: ((ev: { results: { [i: number]: { [j: number]: { transcript: string } } } }) => void) | null; onend: (() => void) | null; lang: string; interimResults: boolean } }).SpeechRecognition ||
+      (window as unknown as { webkitSpeechRecognition?: new () => { start: () => void; stop: () => void; onresult: ((ev: { results: { [i: number]: { [j: number]: { transcript: string } } } }) => void) | null; onend: (() => void) | null; lang: string; interimResults: boolean } }).webkitSpeechRecognition;
+    if (micOn) {
+      recognitionRef.current?.stop();
+      setMicOn(false);
+      setCue("idle");
+      return;
+    }
+    if (!Rec) {
+      say("no", "This browser has no microphone speech API.", true);
+      return;
+    }
+    const rec = new Rec();
+    rec.lang = "en-GB";
+    rec.interimResults = false;
+    rec.onresult = (ev) => {
+      const heard = ev.results[0][0].transcript;
+      say("listen", heard ? "I heard you. Enter the console to talk with Grok Bot." : "I am listening.", true);
+    };
+    rec.onend = () => {
+      setMicOn(false);
+      recognitionRef.current = null;
+    };
+    recognitionRef.current = rec;
+    setMicOn(true);
+    setCue("listen");
+    try {
+      rec.start();
+    } catch {
+      setMicOn(false);
+      say("no", "Could not start the microphone.", true);
+    }
   }
 
   async function signIn() {
@@ -358,16 +395,7 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
         />
       </header>
 
-      <div
-        className="tp-splash-stage"
-        onClick={() =>
-          say(
-            "hello",
-            "Hi. I wave and point. After you enter, talk to Grok Bot — I run the tools, I don't complete assessed work.",
-            true,
-          )
-        }
-      >
+      <div className="tp-splash-stage">
         <GrokHumanoid
           variant="splash"
           mood="idle"
@@ -375,8 +403,9 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
           cue={cue}
           speaking={talking}
           turning={turning}
+          micActive={micOn}
+          onMic={toggleMic}
         />
-        <div className={`tp-bot-hello ${overCard || cue === "point" ? "is-point" : ""}`}>{line}</div>
       </div>
 
       <aside
