@@ -43,6 +43,7 @@ export function G1Humanoid({
   onMic?: () => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const micHitRef = useRef<HTMLButtonElement>(null);
   const moodRef = useRef(mood);
   const expressionRef = useRef(expression);
   const cueRef = useRef(cue);
@@ -235,6 +236,28 @@ export function G1Humanoid({
           logoLight.position.set(0.080, 0, 0.181);
           logo.add(logoLight);
         }
+        const micLink = robot.links.mic_button_link;
+        const micAim = new THREE.Object3D();
+        micAim.name = "mic_hit";
+        // URDF +X is out of the chest. Park a wide disc just in front of the
+        // navel jewel so a finger/cursor can actually hit it at full-body scale.
+        micAim.position.set(0.094, 0, 0.118);
+        micAim.rotation.y = Math.PI / 2;
+        const micDisc = new THREE.Mesh(
+          new THREE.CircleGeometry(0.048, 24),
+          new THREE.MeshBasicMaterial({
+            transparent: true,
+            opacity: 0,
+            depthTest: false,
+            side: THREE.DoubleSide,
+          }),
+        );
+        micDisc.name = "mic_hit";
+        micAim.add(micDisc);
+        if (micLink) micLink.add(micAim);
+        else robot.add(micAim);
+        const isMicTarget = (node: import("three").Object3D) =>
+          ownedBy(node, "mic_button_link") || node.name === "mic_hit";
 
         // URDF mesh sources do not all use the same authored unit scale. Fit the
         // complete articulated hierarchy to a known stage height before placing
@@ -346,18 +369,26 @@ export function G1Humanoid({
         window.addEventListener("pointermove", onPointer, { passive: true });
         const raycaster = new THREE.Raycaster();
         const ndc = new THREE.Vector2();
-        const onCanvasClick = (event: PointerEvent) => {
+        const micNdc = new THREE.Vector3();
+        const hitFromEvent = (event: PointerEvent) => {
           const box = canvasEl.getBoundingClientRect();
-          if (box.width < 1 || box.height < 1) return;
+          if (box.width < 1 || box.height < 1) return false;
           ndc.x = ((event.clientX - box.left) / box.width) * 2 - 1;
           ndc.y = -((event.clientY - box.top) / box.height) * 2 + 1;
           raycaster.setFromCamera(ndc, camera);
           const hits = raycaster.intersectObject(pivot, true);
-          if (hits.some((hit) => ownedBy(hit.object, "mic_button_link"))) {
-            event.stopPropagation();
-            onMicRef.current?.();
-          }
+          return hits.some((hit) => isMicTarget(hit.object));
         };
+        const onCanvasMove = (event: PointerEvent) => {
+          canvasEl.style.cursor = hitFromEvent(event) ? "pointer" : "default";
+        };
+        const onCanvasClick = (event: PointerEvent) => {
+          if (!hitFromEvent(event)) return;
+          event.preventDefault();
+          event.stopPropagation();
+          onMicRef.current?.();
+        };
+        canvasEl.addEventListener("pointermove", onCanvasMove);
         canvasEl.addEventListener("pointerdown", onCanvasClick);
 
         const clock = new THREE.Clock();
@@ -511,6 +542,18 @@ export function G1Humanoid({
           spot.position.set(2.35, 1.72 - p.y * 0.5, -p.x * 0.9);
           spot.target.position.set(0.08, 0.92 - p.y * 0.18, -p.x * 0.32);
           camera.lookAt(lookTarget);
+          const micBtn = micHitRef.current;
+          if (micBtn && micAim.parent) {
+            micNdc.set(0, 0, 0);
+            micAim.getWorldPosition(micNdc);
+            micNdc.project(camera);
+            const onScreen = Math.abs(micNdc.x) < 1.15 && Math.abs(micNdc.y) < 1.15 && micNdc.z < 1;
+            micBtn.style.display = onScreen ? "block" : "none";
+            if (onScreen) {
+              micBtn.style.left = `${(micNdc.x * 0.5 + 0.5) * 100}%`;
+              micBtn.style.top = `${(-micNdc.y * 0.5 + 0.5) * 100}%`;
+            }
+          }
           renderer.render(scene, camera);
         };
         setModelState("ready");
@@ -528,6 +571,7 @@ export function G1Humanoid({
         cleanup = () => {
           observer.disconnect();
           window.removeEventListener("pointermove", onPointer);
+          canvasEl.removeEventListener("pointermove", onCanvasMove);
           canvasEl.removeEventListener("pointerdown", onCanvasClick);
           renderer.setAnimationLoop(null);
           xrRendererRef.current = null;
@@ -568,6 +612,18 @@ export function G1Humanoid({
   return (
     <div className={`tp-bot ${variant} mood-${mood} expr-${expression} ${className}`} data-spline={modelState} aria-label={ariaLabel}>
       <canvas ref={canvasRef} className="tp-bot-spline" aria-hidden />
+      {modelState === "ready" && onMic && (
+        <button
+          ref={micHitRef}
+          type="button"
+          className={`tp-mic-hit ${micActive ? "is-on" : ""}`}
+          aria-label={micActive ? "Stop listening" : "Tap the chest button to talk"}
+          onClick={(event) => {
+            event.stopPropagation();
+            onMic();
+          }}
+        />
+      )}
       {modelState === "loading" && <div className="tp-bot-loading" aria-hidden>{loading}</div>}
       {modelState === "fallback" && fallback}
       {allowXr && (

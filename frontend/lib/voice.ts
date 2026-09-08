@@ -1,5 +1,8 @@
 /** Browser speech for the landing G1. No third-party TTS key required. */
 
+let unlocked = false;
+let resumeTimer: number | null = null;
+
 function pickVoice(): SpeechSynthesisVoice | null {
   const voices = window.speechSynthesis.getVoices();
   if (!voices.length) return null;
@@ -13,6 +16,24 @@ function pickVoice(): SpeechSynthesisVoice | null {
     return n;
   };
   return [...voices].sort((a, b) => score(b) - score(a))[0] ?? null;
+}
+
+export function voiceUnlocked(): boolean {
+  return unlocked;
+}
+
+/** Chrome blocks speech until a click/tap. Call this from a pointer handler. */
+export function unlockVoice(): void {
+  if (typeof window === "undefined" || !window.speechSynthesis || unlocked) return;
+  unlocked = true;
+  const kick = new SpeechSynthesisUtterance(" ");
+  kick.volume = 0;
+  window.speechSynthesis.speak(kick);
+  if (resumeTimer == null) {
+    resumeTimer = window.setInterval(() => {
+      if (window.speechSynthesis.speaking) window.speechSynthesis.resume();
+    }, 5000);
+  }
 }
 
 export function speak(
@@ -34,6 +55,7 @@ export function speak(
     utterance.onstart = () => onStart?.();
     utterance.onend = () => onEnd?.();
     utterance.onerror = () => onEnd?.();
+    window.speechSynthesis.resume();
     window.speechSynthesis.speak(utterance);
   };
   if (window.speechSynthesis.getVoices().length) run();

@@ -6,7 +6,7 @@ import { GrokHumanoid, type GrokCue } from "@/components/GrokHumanoid";
 import { useI18n } from "@/components/Providers";
 import { api, readStudentSession, writeStudentSession } from "@/lib/api";
 import { universityEmailIssue } from "@/lib/universityEmail";
-import { silence, speak } from "@/lib/voice";
+import { silence, speak, unlockVoice, voiceUnlocked } from "@/lib/voice";
 import { rememberConnector } from "@/components/workspace";
 import type { GrokExpression } from "@/lib/splineGrokRig";
 
@@ -102,6 +102,8 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
   const [micOn, setMicOn] = useState(false);
   const typingTimer = useRef<number | null>(null);
   const recognitionRef = useRef<{ start: () => void; stop: () => void } | null>(null);
+  const greetedRef = useRef(false);
+  const pendingLine = useRef<string | null>("Hi. I'm the G1 we engineered for TermPilot. Tap the glowing button on my chest to talk.");
 
   useEffect(() => {
     const id = window.setTimeout(() => setReady(true), 240);
@@ -110,7 +112,7 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
     if (readGrokSession() && session) {
       setReturning({ email: session.email, displayName: session.displayName });
     }
-    say("hello", "Hi. I'm the G1 we engineered for TermPilot.", true);
+    setCue("hello");
     return () => {
       window.clearTimeout(id);
       window.clearTimeout(bye);
@@ -143,11 +145,41 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
   function say(next: GrokCue, text: string, voice = false) {
     setCue(next);
     if (!voice) return;
+    if (!voiceUnlocked()) {
+      pendingLine.current = text;
+      return;
+    }
     speak(
       text,
       () => setTalking(true),
       () => setTalking(false),
     );
+  }
+
+  function armVoice() {
+    unlockVoice();
+    if (greetedRef.current) return;
+    greetedRef.current = true;
+    const line =
+      pendingLine.current ??
+      "Hi. I'm the G1 we engineered for TermPilot. Tap the glowing button on my chest to talk.";
+    pendingLine.current = null;
+    speak(
+      line,
+      () => setTalking(true),
+      () => setTalking(false),
+    );
+  }
+
+  function hostReply(heard: string): string {
+    const text = heard.toLowerCase();
+    if (/\b(hi|hello|hey|yo)\b/.test(text)) {
+      return "Hi. Tap Try the demo and Grok Bot will talk with you in the console.";
+    }
+    if (/\b(who|what are you|your name)\b/.test(text)) {
+      return "I'm the G1 on TermPilot. Grok Bot runs the tools once you enter.";
+    }
+    return "I heard you. Tap Try the demo to talk with Grok Bot in the console.";
   }
 
   function typedCredentials() {
@@ -156,7 +188,11 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
     typingTimer.current = window.setTimeout(() => setTurning(false), 1600);
   }
 
-  function toggleMic() {
+  async function toggleMic() {
+    unlockVoice();
+    greetedRef.current = true;
+    pendingLine.current = null;
+    silence();
     const Rec =
       (window as unknown as { SpeechRecognition?: new () => { start: () => void; stop: () => void; onresult: ((ev: { results: { [i: number]: { [j: number]: { transcript: string } } } }) => void) | null; onend: (() => void) | null; lang: string; interimResults: boolean } }).SpeechRecognition ||
       (window as unknown as { webkitSpeechRecognition?: new () => { start: () => void; stop: () => void; onresult: ((ev: { results: { [i: number]: { [j: number]: { transcript: string } } } }) => void) | null; onend: (() => void) | null; lang: string; interimResults: boolean } }).webkitSpeechRecognition;
@@ -167,15 +203,23 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
       return;
     }
     if (!Rec) {
-      say("no", "This browser has no microphone speech API.", true);
+      say("no", "This browser has no microphone speech API. Use Chrome or Safari, or enter the console to type.", true);
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream.getTracks().forEach((track) => track.stop());
+    } catch {
+      say("no", "I need the microphone permission to hear you.", true);
       return;
     }
     const rec = new Rec();
     rec.lang = "en-GB";
     rec.interimResults = false;
     rec.onresult = (ev) => {
-      const heard = ev.results[0][0].transcript;
-      say("listen", heard ? "I heard you. Enter the console to talk with Grok Bot." : "I am listening.", true);
+      const heard = ev.results?.[0]?.[0]?.transcript ?? "";
+      setMicOn(false);
+      say(heard.toLowerCase().match(/\b(hi|hello|hey)\b/) ? "hello" : "listen", hostReply(heard), true);
     };
     rec.onend = () => {
       setMicOn(false);
@@ -380,7 +424,21 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
   }
 
   return (
-    <div className={`tp-splash ${ready ? "is-on" : ""}`} role="dialog" aria-label={tr("splash.product")}>
+    <div
+      className={`tp-splash ${ready ? "is-on" : ""}`}
+      role="dialog"
+      aria-label={tr("splash.product")}
+      onPointerDown={(event) => {
+        const target = event.target as HTMLElement | null;
+        if (target?.closest(".tp-mic-hit, [aria-pressed]")) {
+          unlockVoice();
+          greetedRef.current = true;
+          pendingLine.current = null;
+          return;
+        }
+        armVoice();
+      }}
+    >
       <div className="tp-splash-cosmos" />
       <div className="tp-splash-well" />
       <div className="tp-splash-ribbon" />
@@ -447,6 +505,14 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
               onClick={() => void enterDemo()}
             >
               {signingIn || preparing ? "Opening demo…" : tr("splash.demo")}
+            </button>
+            <button
+              type="button"
+              className="tp-onboard-back"
+              aria-pressed={micOn}
+              onClick={() => void toggleMic()}
+            >
+              {micOn ? "Listening… tap to stop" : "Talk — press the chest button"}
             </button>
             <p className="tp-splash-hint">{tr("splash.members")}</p>
             <form

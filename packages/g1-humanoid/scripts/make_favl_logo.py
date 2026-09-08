@@ -32,11 +32,12 @@ LOGO_W = 0.102
 LOGO_H = 0.063
 RADIUS = 0.00255
 RADIAL = 16
-# Belly-button hexagon, lower torso.
+# Belly-button hexagon, lower torso. Sit it proud of the chest skin (x≈0.0836)
+# so it is a real pressable jewel, not a mark trapped inside the torso mesh.
 MIC_Z = 0.118
-MIC_R = 0.0115
-MIC_BACK = 0.068
-MIC_FRONT = 0.0765
+MIC_R = 0.0175
+MIC_BACK = 0.079
+MIC_FRONT = 0.089
 HEADER = b"FAVL inlaid chest mark - TermPilot / Frank Van Laarhoven"
 MIC_OUT = VISUALS / "mic_button.STL"
 
