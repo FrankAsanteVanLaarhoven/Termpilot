@@ -16,16 +16,14 @@ Grok Bot is the only student engine. It already operates the tools — you do no
 - VoiceBridge (typed or spoken). Spoken “yes” is never a write.
 - Guardian + Verifier stay in the path. It will not complete assessed work or invent a deadline.
 
-**Try it live:** https://termpilot.org  
-Repo: https://github.com/FrankAsanteVanLaarhoven/Termpilot  
-Sign in with any student email. Click the TermPilot mark for Home. Ask “What should I focus on this week?”
+**Try it live:** https://www.termpilot.org  
+Tap **Try the demo** — no email. Create an account with a campus email if you want your own workspace.
 
-**Shared Bot template** (Add to Grok Bot — same flow as Matt Palmer’s Loops share):  
+**Repo:** https://github.com/FrankAsanteVanLaarhoven/Termpilot  
+Original-work fingerprint `FAVL-TP-D88A5B6D3CD1`.
+
+**Shared Bot template** (Add to Grok Bot):  
 https://x.ai/bot/OeUkDHEV4ykNb2EDpUO1m
-
-Recipe + install if you prefer GitHub:  
-https://github.com/FrankAsanteVanLaarhoven/Termpilot/tree/main/grok/template  
-https://raw.githubusercontent.com/FrankAsanteVanLaarhoven/Termpilot/main/grok/template/PROFILE-PASTE.txt
 
 Video of it in action is attached.
 

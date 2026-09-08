@@ -166,7 +166,7 @@ Failure modes: [docs/failure-modes.md](docs/failure-modes.md).
 - **Email codes** — hashed OTPs via Resend from `student@termpilot.org` when `RESEND_API_KEY` is set and the domain is verified. Reply-To: `support@termpilot.org`.
 - **Logs** — tokens, passwords, OTPs, and raw mail bodies redacted.
 - **Members only** — production API returns 401 without a `tp_session` cookie. Spoofable `X-User-Id` is ignored. The console stays on the splash until a campus member signs in.
-- **Clone deterrence** — signed-in sessions show a university-email watermark plus origin id `FAVL-TP-D88A5B6D3CD1`, block copy/context-menu outside form fields, blur when the tab is hidden, and refuse print. `robots.txt` and `noindex` keep crawlers out. A website cannot block operating-system screenshots; the watermark is the practical deterrent. The GitHub repository is private so the source stays original.
+- **Clone deterrence** — signed-in sessions show a university-email watermark plus origin id `FAVL-TP-D88A5B6D3CD1`, block copy/context-menu outside form fields, blur when the tab is hidden, and refuse print. `robots.txt` and `noindex` keep crawlers out. A website cannot block operating-system screenshots; the watermark is the practical deterrent. The repository is public for the challenge; LICENSE remains all rights reserved.
 - **Tenancy** — every row is `user_id` scoped. Production ignores spoofable `X-User-Id` when a session cookie is required.
 
 ---
