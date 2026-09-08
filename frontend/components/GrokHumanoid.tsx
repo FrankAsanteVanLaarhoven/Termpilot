@@ -3,9 +3,10 @@
 import Image from "next/image";
 import { type BotMood } from "@/components/GrokBotMark";
 import { useI18n } from "@/components/Providers";
-import { G1Humanoid, G1_URDF, type G1Expression } from "@/lib/g1/G1Humanoid";
+import { G1Humanoid, G1_URDF, type G1Cue, type G1Expression } from "@/lib/g1/G1Humanoid";
 
 export type GrokExpression = G1Expression;
+export type GrokCue = G1Cue;
 export type { BotMood };
 export const URDF_HUMANOID = G1_URDF;
 
@@ -15,12 +16,14 @@ export function GrokHumanoid({
   variant = "stage",
   className = "",
   allowXr = false,
+  cue = "idle",
 }: {
   mood?: BotMood;
   expression?: GrokExpression;
   variant?: "splash" | "stage" | "compact";
   className?: string;
   allowXr?: boolean;
+  cue?: GrokCue;
 }) {
   const { tr } = useI18n();
   return (
@@ -31,6 +34,7 @@ export function GrokHumanoid({
       className={className}
       urdfUrl={URDF_HUMANOID}
       allowXr={allowXr}
+      cue={cue}
       ariaLabel={`${tr("grokbot.name")} interactive humanoid`}
       loading={
         <Image

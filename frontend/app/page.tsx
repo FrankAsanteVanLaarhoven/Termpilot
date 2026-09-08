@@ -513,6 +513,15 @@ export default function Page() {
                 <GrokHumanoid
                   variant="stage"
                   mood={botMood}
+                  cue={
+                    botMood === "speaking"
+                      ? "hello"
+                      : botMood === "listening"
+                        ? "listen"
+                        : botMood === "processing"
+                          ? "think"
+                          : "idle"
+                  }
                   expression={
                     botMood === "speaking" ? "glad" : botMood === "listening" ? "listen" : botMood === "processing" ? "think" : "idle"
                   }

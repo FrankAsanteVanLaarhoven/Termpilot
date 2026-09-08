@@ -536,6 +536,7 @@ button.tp-logo:focus-visible .tp-logo-word {
   left: 52%;
   top: 14%;
   transform: translateX(-10%);
+  max-width: min(320px, 46vw);
   padding: 10px 16px;
   border-radius: 18px 18px 18px 4px;
   border: 1px solid rgba(58, 208, 255, 0.45);
@@ -543,6 +544,7 @@ button.tp-logo:focus-visible .tp-logo-word {
   color: #e8f9ff;
   font-family: "IBM Plex Mono", ui-monospace, monospace;
   font-size: 13px;
+  line-height: 1.45;
   letter-spacing: 0.04em;
   pointer-events: none;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);

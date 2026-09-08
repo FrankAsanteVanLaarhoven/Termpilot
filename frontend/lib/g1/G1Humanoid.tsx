@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 
 export type G1Mood = "idle" | "listening" | "processing" | "speaking";
 export type G1Expression = "idle" | "welcome" | "curious" | "listen" | "think" | "glad" | "careful";
+export type G1Cue = "idle" | "hello" | "wave" | "point" | "listen" | "think" | "yes" | "no" | "invite";
 export const G1_URDF = "/robot/g1/g1.urdf";
 
 type Pointer = { x: number; y: number; overSignin: boolean };
@@ -20,6 +21,7 @@ export function G1Humanoid({
   loading = null,
   fallback = null,
   allowXr = false,
+  cue = "idle",
 }: {
   mood?: G1Mood | string;
   expression?: G1Expression | string;
@@ -30,10 +32,12 @@ export function G1Humanoid({
   loading?: ReactNode;
   fallback?: ReactNode;
   allowXr?: boolean;
+  cue?: G1Cue | string;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const moodRef = useRef(mood);
   const expressionRef = useRef(expression);
+  const cueRef = useRef(cue);
   const pointerRef = useRef<Pointer>({ x: 0, y: 0, overSignin: false });
   const xrRendererRef = useRef<{
     setSession: (session: XRSession) => Promise<void>;
@@ -45,6 +49,7 @@ export function G1Humanoid({
   const [xrNote, setXrNote] = useState<string | null>(null);
   moodRef.current = mood;
   expressionRef.current = expression;
+  cueRef.current = cue;
 
   useEffect(() => {
     if (!allowXr) return;
@@ -298,17 +303,24 @@ export function G1Humanoid({
         const clock = new THREE.Clock();
         let pointMix = 0;
         let greetMix = fullBody ? 1 : 0;
+        let listenMix = 0;
+        let thinkMix = 0;
+        let yesMix = 0;
+        let noMix = 0;
+        let inviteMix = 0;
         const animate = () => {
           if (disposed) return;
           const t = clock.getElapsedTime();
           const p = pointerRef.current;
-          const active = moodRef.current === "speaking" || expressionRef.current === "glad";
-          const listening = moodRef.current === "listening" || expressionRef.current === "listen";
-          const thinking = moodRef.current === "processing" || expressionRef.current === "think";
+          const cue = cueRef.current;
+          const active = moodRef.current === "speaking" || expressionRef.current === "glad" || cue === "hello";
+          const listening = moodRef.current === "listening" || expressionRef.current === "listen" || cue === "listen";
+          const thinking = moodRef.current === "processing" || expressionRef.current === "think" || cue === "think";
           const breath = Math.sin(t * 1.55) * 0.025;
           const gesture = active ? Math.sin(t * 3.1) * 0.23 : listening ? 0.16 : Math.sin(t * 0.72) * 0.035;
+          const busy = cue === "listen" || cue === "think" || cue === "point" || cue === "no" || p.overSignin;
           let spin = 0;
-          if (fullBody && !p.overSignin) {
+          if (fullBody && !busy) {
             const u = (t + 1.5) % 16;
             if (u >= 7 && u < 9) spin = THREE.MathUtils.smootherstep((u - 7) / 2, 0, 1) * Math.PI;
             else if (u >= 9 && u < 11.4) spin = Math.PI;
@@ -317,11 +329,20 @@ export function G1Humanoid({
           pivot.rotation.y += (spin - pivot.rotation.y) * 0.1;
           const facing = 1 - Math.abs(spin) / Math.PI;
           const greetPulse = t < 6 || (t % 16 > 0 && t % 16 < 3.2);
-          greetMix += ((fullBody && greetPulse && !p.overSignin && facing > 0.75 ? 1 : 0) - greetMix) * 0.12;
-          pointMix += ((fullBody && p.overSignin ? 1 : 0) - pointMix) * 0.14;
+          const wantGreet =
+            cue === "hello" ||
+            cue === "wave" ||
+            (fullBody && greetPulse && !busy && facing > 0.75 && cue === "idle");
+          greetMix += ((wantGreet ? 1 : 0) - greetMix) * 0.14;
+          pointMix += ((cue === "point" || (fullBody && p.overSignin) ? 1 : 0) - pointMix) * 0.16;
+          listenMix += ((cue === "listen" || listening ? 1 : 0) - listenMix) * 0.12;
+          thinkMix += ((cue === "think" || thinking ? 1 : 0) - thinkMix) * 0.12;
+          yesMix += ((cue === "yes" ? 1 : 0) - yesMix) * 0.16;
+          noMix += ((cue === "no" ? 1 : 0) - noMix) * 0.2;
+          inviteMix += ((cue === "invite" ? 1 : 0) - inviteMix) * 0.12;
           const g = greetMix;
           const pt = pointMix;
-          const idle = Math.max(0, 1 - g - pt);
+          const idle = Math.max(0, 1 - g - pt - listenMix - thinkMix - inviteMix);
           const wave = Math.sin(t * 10) * 0.5 + 0.5;
           const hipSway = Math.sin(t * 1.1) * 0.045;
           const turn = THREE.MathUtils.clamp(p.x * (fullBody ? 0.28 : 0.08) + pt * 0.32, -0.45, 0.5);
@@ -330,18 +351,32 @@ export function G1Humanoid({
 
           setJoint(
             "left_shoulder_pitch_joint",
-            (-0.12 + breath - gesture * 0.4 - p.y * 0.08) * idle + -0.55 * pt + -0.2 * g,
+            (-0.12 + breath - gesture * 0.4 - p.y * 0.08) * idle +
+              -0.55 * pt +
+              -0.2 * g +
+              -0.7 * listenMix +
+              -0.85 * thinkMix +
+              -0.25 * inviteMix,
           );
           setJoint(
             "right_shoulder_pitch_joint",
-            (-0.12 - breath + gesture - p.y * 0.08) * idle + -0.35 * g + -0.15 * pt,
+            (-0.12 - breath + gesture - p.y * 0.08) * idle + -0.35 * g + -0.15 * pt - 0.25 * inviteMix - 0.2 * yesMix,
           );
-          setJoint("left_shoulder_roll_joint", (0.14 + p.x * 0.1) * idle + 1.15 * pt + 0.2 * g);
-          setJoint("right_shoulder_roll_joint", (-0.14 + p.x * 0.08) * idle + -1.35 * g + -0.2 * pt);
-          setJoint("left_shoulder_yaw_joint", p.x * -0.12 * idle + 0.55 * pt);
+          setJoint(
+            "left_shoulder_roll_joint",
+            (0.14 + p.x * 0.1) * idle + 1.15 * pt + 0.2 * g + 0.7 * listenMix + 0.85 * thinkMix + 0.55 * inviteMix,
+          );
+          setJoint(
+            "right_shoulder_roll_joint",
+            (-0.14 + p.x * 0.08) * idle + -1.35 * g - 0.2 * pt - 0.55 * inviteMix - 0.4 * yesMix,
+          );
+          setJoint("left_shoulder_yaw_joint", p.x * -0.12 * idle + 0.55 * pt + 0.35 * listenMix + 0.4 * thinkMix);
           setJoint("right_shoulder_yaw_joint", p.x * -0.12 * idle + 0.25 * g);
-          setJoint("left_elbow_joint", (0.3 + Math.abs(gesture) * 0.42) * idle + 0.2 * pt + 0.35 * g);
-          setJoint("right_elbow_joint", (0.3 + (active ? 0.48 : 0.15)) * idle + (0.9 + wave * 0.85) * g + 0.35 * pt);
+          setJoint("left_elbow_joint", (0.3 + Math.abs(gesture) * 0.42) * idle + 0.2 * pt + 0.35 * g + 1.1 * listenMix + 1.2 * thinkMix);
+          setJoint(
+            "right_elbow_joint",
+            (0.3 + (active ? 0.48 : 0.15)) * idle + (0.9 + wave * 0.85) * g + 0.35 * pt + 0.4 * inviteMix,
+          );
           setJoint("left_wrist_roll_joint", Math.sin(t * 1.15) * 0.11 * idle + 0.2 * pt);
           setJoint("right_wrist_roll_joint", Math.sin(t * 1.15 + Math.PI) * 0.11 * idle + (wave * 1.6 - 0.8) * g);
           setJoint("left_wrist_pitch_joint", p.y * -0.12 * idle + 0.25 * pt);
@@ -365,8 +400,19 @@ export function G1Humanoid({
           // +Y left, +Z up. Yaw around Z, pitch (nod) around Y — never roll
           // around X, which previously swung the helmet off the neck.
           if (gaze) {
-            const yaw = THREE.MathUtils.clamp(p.x * 0.4, -0.42, 0.42);
-            const pitch = THREE.MathUtils.clamp(p.y * 0.26 + (thinking ? Math.sin(t * 1.8) * 0.03 : 0), -0.28, 0.28);
+            const yaw = THREE.MathUtils.clamp(
+              p.x * 0.4 + Math.sin(t * 11) * 0.38 * noMix,
+              -0.55,
+              0.55,
+            );
+            const pitch = THREE.MathUtils.clamp(
+              p.y * 0.26 +
+                (thinking ? Math.sin(t * 1.8) * 0.03 : 0) +
+                Math.sin(t * 8.5) * 0.24 * yesMix +
+                0.18 * listenMix,
+              -0.32,
+              0.34,
+            );
             gaze.rotation.set(0, pitch, yaw);
           }
           eyes.forEach((eye) => {

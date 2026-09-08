@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { GrokBotMark, TermPilotLogo } from "@/components/GrokBotMark";
-import { GrokHumanoid } from "@/components/GrokHumanoid";
+import { GrokHumanoid, type GrokCue } from "@/components/GrokHumanoid";
 import { useI18n } from "@/components/Providers";
 import { api, readStudentSession, writeStudentSession } from "@/lib/api";
 import { universityEmailIssue } from "@/lib/universityEmail";
@@ -95,11 +95,12 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
   const [preparing, setPreparing] = useState(false);
   const [returning, setReturning] = useState<{ email: string; displayName: string } | null>(null);
   const [overCard, setOverCard] = useState(false);
-  const [hello, setHello] = useState(true);
+  const [cue, setCue] = useState<GrokCue>("hello");
+  const [line, setLine] = useState("Hi — I'm the G1 we engineered for TermPilot.");
 
   useEffect(() => {
     const id = window.setTimeout(() => setReady(true), 240);
-    const bye = window.setTimeout(() => setHello(false), 5200);
+    const bye = window.setTimeout(() => setCue("idle"), 5600);
     const session = readStudentSession();
     if (readGrokSession() && session) {
       setReturning({ email: session.email, displayName: session.displayName });
@@ -130,15 +131,22 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
 
   const filteredTools = TOOLS.filter((item) => item.label.toLowerCase().includes(query.toLowerCase()));
 
+  function say(next: GrokCue, text: string) {
+    setCue(next);
+    setLine(text);
+  }
+
   async function signIn() {
     const mail = email.trim().toLowerCase();
     const mailIssue = universityEmailIssue(mail);
     if (mailIssue) {
       setError(mailIssue);
+      say("no", "That needs a real campus email — not a personal inbox.");
       return;
     }
     if (password.trim().length < 8) {
       setError("Choose a password of at least 8 characters. First visit creates your account.");
+      say("no", "Make the password at least 8 characters.");
       return;
     }
     setError(null);
@@ -209,6 +217,7 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
   async function enterDemo() {
     if (signingIn || preparing) return;
     setError(null);
+    say("invite", "Opening the demo console.");
     setSigningIn(true);
     try {
       const profile = await api.demoLogin();
@@ -216,6 +225,7 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
     } catch (err) {
       const message = err instanceof Error ? err.message : "Could not reach TermPilot.";
       setError(message.includes("fetch") ? "Cannot reach the TermPilot API. Try again in a moment." : message);
+      say("no", "I couldn't reach the API. Try again in a moment.");
     } finally {
       setSigningIn(false);
     }
@@ -226,10 +236,12 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
     const mailIssue = universityEmailIssue(mail);
     if (mailIssue) {
       setError(mailIssue);
+      say("no", "That needs a real campus email — not a personal inbox.");
       return;
     }
     if (password.trim().length < 8) {
       setError("Choose a password of at least 8 characters. First visit creates your account.");
+      say("no", "Make the password at least 8 characters.");
       return;
     }
     setError(null);
@@ -327,19 +339,26 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
         />
       </header>
 
-      <div className="tp-splash-stage">
-        <GrokHumanoid variant="splash" mood="idle" expression={expression} />
-        {(hello || overCard) && (
-          <div className={`tp-bot-hello ${overCard ? "is-point" : ""}`}>
-            {overCard ? "Sign in here" : "Hi — start here"}
-          </div>
-        )}
+      <div
+        className="tp-splash-stage"
+        onClick={() =>
+          say("hello", "Hi. I wave, turn, and point. After you enter, talk to Grok Bot — I run the tools, I don't complete assessed work.")
+        }
+      >
+        <GrokHumanoid variant="splash" mood="idle" expression={expression} cue={cue} />
+        <div className={`tp-bot-hello ${overCard || cue === "point" ? "is-point" : ""}`}>{line}</div>
       </div>
 
       <aside
         className="tp-splash-card tp-onboard"
-        onMouseEnter={() => setOverCard(true)}
-        onMouseLeave={() => setOverCard(false)}
+        onMouseEnter={() => {
+          setOverCard(true);
+          say("point", "Sign in here when you want your own campus workspace.");
+        }}
+        onMouseLeave={() => {
+          setOverCard(false);
+          say("idle", "Hover a control and I'll follow.");
+        }}
       >
         {step === "login" && (
           <>
@@ -355,6 +374,7 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
                 type="button"
                 className="tp-splash-enter"
                 disabled={signingIn || preparing}
+                onMouseEnter={() => say("invite", "Welcome back. Continue into the console.")}
                 onClick={() => onEnter()}
               >
                 {signingIn || preparing ? "Opening…" : tr("splash.continue")}
@@ -364,6 +384,7 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
               type="button"
               className={returning ? "tp-onboard-back" : "tp-splash-enter"}
               disabled={signingIn || preparing}
+              onMouseEnter={() => say("invite", "Tap Try the demo — I'll open a synthetic student week.")}
               onClick={() => void enterDemo()}
             >
               {signingIn || preparing ? "Opening demo…" : tr("splash.demo")}
@@ -390,6 +411,7 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
                   data-lpignore="true"
                   placeholder="you@your-university.edu"
                   value={email}
+                  onFocus={() => say("listen", "I'm listening. Use the campus email your university issued you.")}
                   onChange={(e) => setEmail(e.target.value)}
                 />
               </label>
@@ -403,6 +425,7 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
                   data-lpignore="true"
                   placeholder="at least 8 characters"
                   value={password}
+                  onFocus={() => say("yes", "At least 8 characters. I'll wait for you.")}
                   onChange={(e) => setPassword(e.target.value)}
                 />
               </label>
