@@ -139,7 +139,9 @@ export function G1Humanoid({
         });
         if (disposed) { renderer.dispose(); return; }
         robot.rotation.x = -Math.PI / 2;
-        scene.add(robot);
+        const pivot = new THREE.Group();
+        pivot.add(robot);
+        scene.add(pivot);
 
         const dark = new THREE.MeshPhysicalMaterial({ color: 0x0a1218, metalness: 0.78, roughness: 0.28, clearcoat: 0.85, clearcoatRoughness: 0.16, emissive: 0x041018, emissiveIntensity: 0.35 });
         const graphite = new THREE.MeshPhysicalMaterial({ color: 0x1c2c38, metalness: 0.72, roughness: 0.32, clearcoat: 0.8, emissive: 0x06222c, emissiveIntensity: 0.28 });
@@ -305,8 +307,17 @@ export function G1Humanoid({
           const thinking = moodRef.current === "processing" || expressionRef.current === "think";
           const breath = Math.sin(t * 1.55) * 0.025;
           const gesture = active ? Math.sin(t * 3.1) * 0.23 : listening ? 0.16 : Math.sin(t * 0.72) * 0.035;
-          const greetPulse = t < 6 || (t % 11 > 0 && t % 11 < 3.2);
-          greetMix += ((fullBody && greetPulse && !p.overSignin ? 1 : 0) - greetMix) * 0.12;
+          let spin = 0;
+          if (fullBody && !p.overSignin) {
+            const u = (t + 1.5) % 16;
+            if (u >= 7 && u < 9) spin = THREE.MathUtils.smootherstep((u - 7) / 2, 0, 1) * Math.PI;
+            else if (u >= 9 && u < 11.4) spin = Math.PI;
+            else if (u >= 11.4 && u < 13.6) spin = (1 - THREE.MathUtils.smootherstep((u - 11.4) / 2.2, 0, 1)) * Math.PI;
+          }
+          pivot.rotation.y += (spin - pivot.rotation.y) * 0.1;
+          const facing = 1 - Math.abs(spin) / Math.PI;
+          const greetPulse = t < 6 || (t % 16 > 0 && t % 16 < 3.2);
+          greetMix += ((fullBody && greetPulse && !p.overSignin && facing > 0.75 ? 1 : 0) - greetMix) * 0.12;
           pointMix += ((fullBody && p.overSignin ? 1 : 0) - pointMix) * 0.14;
           const g = greetMix;
           const pt = pointMix;
