@@ -94,14 +94,20 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
   const [signingIn, setSigningIn] = useState(false);
   const [preparing, setPreparing] = useState(false);
   const [returning, setReturning] = useState<{ email: string; displayName: string } | null>(null);
+  const [overCard, setOverCard] = useState(false);
+  const [hello, setHello] = useState(true);
 
   useEffect(() => {
     const id = window.setTimeout(() => setReady(true), 240);
+    const bye = window.setTimeout(() => setHello(false), 5200);
     const session = readStudentSession();
     if (readGrokSession() && session) {
       setReturning({ email: session.email, displayName: session.displayName });
     }
-    return () => window.clearTimeout(id);
+    return () => {
+      window.clearTimeout(id);
+      window.clearTimeout(bye);
+    };
   }, []);
 
   useEffect(() => {
@@ -323,9 +329,18 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
 
       <div className="tp-splash-stage">
         <GrokHumanoid variant="splash" mood="idle" expression={expression} />
+        {(hello || overCard) && (
+          <div className={`tp-bot-hello ${overCard ? "is-point" : ""}`}>
+            {overCard ? "Sign in here" : "Hi — start here"}
+          </div>
+        )}
       </div>
 
-      <aside className="tp-splash-card tp-onboard">
+      <aside
+        className="tp-splash-card tp-onboard"
+        onMouseEnter={() => setOverCard(true)}
+        onMouseLeave={() => setOverCard(false)}
+      >
         {step === "login" && (
           <>
             <p className="tp-splash-kicker">{tr("splash.powered")}</p>

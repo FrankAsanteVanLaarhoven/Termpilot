@@ -530,6 +530,30 @@ button.tp-logo:focus-visible .tp-logo-word {
   height: 100%;
   min-height: 100%;
 }
+.tp-bot-hello {
+  position: absolute;
+  z-index: 4;
+  left: 52%;
+  top: 14%;
+  transform: translateX(-10%);
+  padding: 10px 16px;
+  border-radius: 18px 18px 18px 4px;
+  border: 1px solid rgba(58, 208, 255, 0.45);
+  background: rgba(8, 12, 18, 0.78);
+  color: #e8f9ff;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+}
+.tp-bot-hello.is-point {
+  left: auto;
+  right: 8%;
+  top: 22%;
+  transform: none;
+  border-radius: 18px 18px 4px 18px;
+}
 
 .tp-splash-card {
   position: absolute;
