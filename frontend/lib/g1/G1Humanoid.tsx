@@ -87,12 +87,12 @@ export function G1Humanoid({
 
         const scene = new THREE.Scene();
         const fullBody = variant === "splash";
-        const camera = new THREE.PerspectiveCamera(fullBody ? 34 : 28, 1, 0.01, 40);
-        // URDF +X is face-forward. Splash pulls back for a full-height frame;
-        // in-app stage stays a head-and-chest portrait.
-        const lookY = fullBody ? 0.16 : 0.9;
-        camera.position.set(fullBody ? 4.85 : 2.55, fullBody ? 0.2 : 0.98, fullBody ? 0.04 : 0.06);
-        camera.lookAt(0, lookY, 0);
+        const camera = new THREE.PerspectiveCamera(fullBody ? 32 : 28, 1, 0.05, 40);
+        // URDF +X is face-forward. Splash is framed from the mesh bounds so the
+        // whole G1 stays in view; in-app stage stays a head-and-chest portrait.
+        const lookTarget = new THREE.Vector3(0, fullBody ? 0.35 : 0.9, 0);
+        camera.position.set(fullBody ? 3.6 : 2.55, fullBody ? 0.35 : 0.98, fullBody ? 0.04 : 0.06);
+        camera.lookAt(lookTarget);
         scene.add(camera);
         scene.add(new THREE.HemisphereLight(0xd7f7ff, 0x05070c, 1.7));
         const key = new THREE.DirectionalLight(0xffffff, 5.4);
@@ -235,6 +235,8 @@ export function G1Humanoid({
         const setJoint = (name: string, value: number) => {
           try { robot.setJointValue(name, value); } catch { /* optional joint */ }
         };
+        const homeCamera = camera.position.clone();
+        const homeRobotY = robot.position.y;
         const resize = () => {
           const rect = canvasEl.getBoundingClientRect();
           const width = Math.max(1, Math.round(rect.width));
@@ -243,9 +245,32 @@ export function G1Humanoid({
           camera.aspect = width / height;
           camera.updateProjectionMatrix();
         };
-        const observer = new ResizeObserver(resize);
+        const frameSplash = () => {
+          if (!fullBody) return;
+          robot.updateMatrixWorld(true);
+          const box = new THREE.Box3().setFromObject(robot);
+          if (box.isEmpty()) return;
+          const size = box.getSize(new THREE.Vector3());
+          const center = box.getCenter(new THREE.Vector3());
+          lookTarget.copy(center);
+          const pad = 1.2;
+          const vFov = THREE.MathUtils.degToRad(camera.fov);
+          const distH = (size.y * pad) / (2 * Math.tan(vFov / 2));
+          const hFov = 2 * Math.atan(Math.tan(vFov / 2) * Math.max(camera.aspect, 0.25));
+          const distW = (Math.max(size.x, size.z) * pad) / (2 * Math.tan(hFov / 2));
+          const dist = Math.min(8, Math.max(distH, distW, 2.2));
+          camera.position.set(center.x + dist, center.y, center.z);
+          camera.lookAt(lookTarget);
+          camera.updateProjectionMatrix();
+          homeCamera.copy(camera.position);
+        };
+        const observer = new ResizeObserver(() => {
+          resize();
+          frameSplash();
+        });
         observer.observe(canvasEl);
         resize();
+        frameSplash();
         const onPointer = (event: PointerEvent) => {
           const rect = canvasEl.getBoundingClientRect();
           const x = ((event.clientX - rect.left) / Math.max(rect.width, 1) - 0.5) * 2;
@@ -258,8 +283,6 @@ export function G1Humanoid({
         window.addEventListener("pointermove", onPointer, { passive: true });
 
         const clock = new THREE.Clock();
-        const homeCamera = camera.position.clone();
-        const homeRobotY = robot.position.y;
         const animate = () => {
           if (disposed) return;
           const t = clock.getElapsedTime();
@@ -331,7 +354,7 @@ export function G1Humanoid({
           fill.position.z = -1.7 - p.x * 0.18;
           spot.position.set(2.35, 1.72 - p.y * 0.5, -p.x * 0.9);
           spot.target.position.set(0.08, 0.92 - p.y * 0.18, -p.x * 0.32);
-          camera.lookAt(0, lookY, 0);
+          camera.lookAt(lookTarget);
           renderer.render(scene, camera);
         };
         setModelState("ready");

@@ -264,6 +264,7 @@ nextjs-portal,
 
 .tp-splash {
   position: relative;
+  height: 100dvh;
   min-height: 100vh;
   overflow: hidden;
   color: #f3f6fa;
@@ -518,8 +519,16 @@ button.tp-logo:focus-visible .tp-logo-word {
 .tp-splash-stage {
   position: absolute;
   z-index: 3;
-  inset: 0 36% 0 0;
+  top: 0;
+  left: 0;
+  right: min(440px, 38vw);
+  bottom: 0;
+  height: 100%;
   pointer-events: auto;
+}
+.tp-bot.splash {
+  height: 100%;
+  min-height: 100%;
 }
 
 .tp-splash-card {
@@ -1035,7 +1044,11 @@ button.tp-logo:focus-visible .tp-logo-word {
 
 @media (max-width: 900px) {
   .tp-splash-stage {
-    inset: 2% 0 40%;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 42%;
+    height: auto;
   }
   .tp-splash-card {
     top: auto;
