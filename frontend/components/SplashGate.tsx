@@ -93,9 +93,14 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
   const [mailReady, setMailReady] = useState(true);
   const [signingIn, setSigningIn] = useState(false);
   const [preparing, setPreparing] = useState(false);
+  const [returning, setReturning] = useState<{ email: string; displayName: string } | null>(null);
 
   useEffect(() => {
     const id = window.setTimeout(() => setReady(true), 240);
+    const session = readStudentSession();
+    if (readGrokSession() && session) {
+      setReturning({ email: session.email, displayName: session.displayName });
+    }
     return () => window.clearTimeout(id);
   }, []);
 
@@ -330,9 +335,19 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
             </h1>
             <p className="tp-splash-tag">{tr("splash.tagline")}</p>
             <p className="tp-splash-hint">{tr("splash.publicDemo")}</p>
+            {returning && (
+              <button
+                type="button"
+                className="tp-splash-enter"
+                disabled={signingIn || preparing}
+                onClick={() => onEnter()}
+              >
+                {signingIn || preparing ? "Opening…" : tr("splash.continue")}
+              </button>
+            )}
             <button
               type="button"
-              className="tp-splash-enter"
+              className={returning ? "tp-onboard-back" : "tp-splash-enter"}
               disabled={signingIn || preparing}
               onClick={() => void enterDemo()}
             >

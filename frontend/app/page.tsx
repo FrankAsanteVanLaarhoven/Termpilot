@@ -47,7 +47,7 @@ import { CookieBanner } from "@/components/CookieBanner";
 import { ModelDock } from "@/components/ModelDock";
 import { GrokHumanoid, type BotMood } from "@/components/GrokHumanoid";
 import { MemberShield } from "@/components/MemberShield";
-import { SplashGate, readGrokSession, writeGrokSession } from "@/components/SplashGate";
+import { SplashGate, writeGrokSession } from "@/components/SplashGate";
 import { NavGlyph } from "@/components/NavGlyph";
 
 const NAV: { id: ViewId; student: string | null; proof: string }[] = [
@@ -205,7 +205,7 @@ export default function Page() {
   }, []);
 
   useEffect(() => {
-    setGate(readGrokSession() && readStudentSession() ? "app" : "splash");
+    setGate("splash");
     setView(readLastView());
     setHydrated(true);
   }, []);
