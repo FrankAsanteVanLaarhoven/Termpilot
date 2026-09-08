@@ -2,6 +2,7 @@
 
 let unlocked = false;
 let resumeTimer: number | null = null;
+let speakGen = 0;
 
 function pickVoice(): SpeechSynthesisVoice | null {
   const voices = window.speechSynthesis.getVoices();
@@ -26,13 +27,14 @@ export function voiceUnlocked(): boolean {
 export function unlockVoice(): void {
   if (typeof window === "undefined" || !window.speechSynthesis || unlocked) return;
   unlocked = true;
-  const kick = new SpeechSynthesisUtterance(" ");
+  const kick = new SpeechSynthesisUtterance(".");
   kick.volume = 0;
+  kick.rate = 2;
   window.speechSynthesis.speak(kick);
   if (resumeTimer == null) {
     resumeTimer = window.setInterval(() => {
       if (window.speechSynthesis.speaking) window.speechSynthesis.resume();
-    }, 5000);
+    }, 4000);
   }
 }
 
@@ -41,31 +43,45 @@ export function speak(
   onStart?: () => void,
   onEnd?: () => void,
 ): void {
-  if (typeof window === "undefined" || !window.speechSynthesis) {
+  const gen = ++speakGen;
+  let finished = false;
+  const start = () => {
+    if (gen !== speakGen || finished) return;
+    onStart?.();
+  };
+  const done = () => {
+    if (gen !== speakGen || finished) return;
+    finished = true;
     onEnd?.();
+  };
+  if (typeof window === "undefined" || !window.speechSynthesis) {
+    start();
+    window.setTimeout(done, Math.min(12000, Math.max(2800, text.split(/\s+/).length * 260)));
     return;
   }
+  // Chrome drops the next utterance if speak() follows cancel() in the same tick.
+  window.speechSynthesis.cancel();
+  const wait = Math.min(16000, Math.max(3200, text.split(/\s+/).length * 280));
   const run = () => {
-    window.speechSynthesis.cancel();
+    if (gen !== speakGen) return;
     const utterance = new SpeechSynthesisUtterance(text);
     const voice = pickVoice();
     if (voice) utterance.voice = voice;
     utterance.rate = 1.02;
     utterance.pitch = 1.04;
-    utterance.onstart = () => onStart?.();
-    utterance.onend = () => onEnd?.();
-    utterance.onerror = () => onEnd?.();
+    utterance.onstart = start;
+    utterance.onend = done;
+    utterance.onerror = done;
+    start();
     window.speechSynthesis.resume();
     window.speechSynthesis.speak(utterance);
+    window.setTimeout(done, wait);
   };
-  if (window.speechSynthesis.getVoices().length) run();
-  else {
-    window.speechSynthesis.addEventListener("voiceschanged", run, { once: true });
-    window.setTimeout(run, 250);
-  }
+  window.setTimeout(run, 90);
 }
 
 export function silence(): void {
+  speakGen += 1;
   if (typeof window === "undefined") return;
   window.speechSynthesis?.cancel();
 }

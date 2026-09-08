@@ -245,7 +245,7 @@ export function G1Humanoid({
         micAim.position.set(0.084, 0, 0.118);
         micAim.rotation.y = Math.PI / 2;
         const micDisc = new THREE.Mesh(
-          new THREE.CircleGeometry(0.048, 24),
+          new THREE.CircleGeometry(0.07, 24),
           new THREE.MeshBasicMaterial({
             transparent: true,
             opacity: 0,
@@ -257,8 +257,11 @@ export function G1Humanoid({
         micAim.add(micDisc);
         if (micLink) micLink.add(micAim);
         else robot.add(micAim);
-        const isMicTarget = (node: import("three").Object3D) =>
-          ownedBy(node, "mic_button_link") || node.name === "mic_hit";
+        const isChestTarget = (node: import("three").Object3D) =>
+          ownedBy(node, "mic_button_link") ||
+          ownedBy(node, "logo_link") ||
+          ownedBy(node, "torso_link") ||
+          node.name === "mic_hit";
 
         // URDF mesh sources do not all use the same authored unit scale. Fit the
         // complete articulated hierarchy to a known stage height before placing
@@ -378,7 +381,7 @@ export function G1Humanoid({
           ndc.y = -((event.clientY - box.top) / box.height) * 2 + 1;
           raycaster.setFromCamera(ndc, camera);
           const hits = raycaster.intersectObject(pivot, true);
-          return hits.some((hit) => isMicTarget(hit.object));
+          return hits.some((hit) => isChestTarget(hit.object));
         };
         const onCanvasMove = (event: PointerEvent) => {
           canvasEl.style.cursor = hitFromEvent(event) ? "pointer" : "default";
@@ -619,7 +622,8 @@ export function G1Humanoid({
           type="button"
           className={`tp-mic-hit ${micActive ? "is-on" : ""}`}
           aria-label={micActive ? "Stop listening" : "Tap the chest button to talk"}
-          onClick={(event) => {
+          onPointerDown={(event) => {
+            event.preventDefault();
             event.stopPropagation();
             onMic();
           }}

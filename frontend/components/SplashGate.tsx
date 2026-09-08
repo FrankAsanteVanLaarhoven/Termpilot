@@ -100,6 +100,7 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
   const [talking, setTalking] = useState(false);
   const [turning, setTurning] = useState(false);
   const [micOn, setMicOn] = useState(false);
+  const [hostLine, setHostLine] = useState("");
   const typingTimer = useRef<number | null>(null);
   const recognitionRef = useRef<{ start: () => void; stop: () => void } | null>(null);
   const greetedRef = useRef(false);
@@ -148,6 +149,7 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
   function say(next: GrokCue, text: string, voice = false) {
     setCue(next);
     if (!voice) return;
+    setHostLine(text);
     if (!voiceUnlocked()) {
       pendingLine.current = text;
       return;
@@ -167,6 +169,7 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
       pendingLine.current ??
       "Hi. I'm the G1 we engineered for TermPilot. Press the button in my chest if you want me to help you in.";
     pendingLine.current = null;
+    setHostLine(line);
     speak(
       line,
       () => setTalking(true),
@@ -241,6 +244,7 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
     recognitionRef.current = rec;
     setMicOn(true);
     setCue("listen");
+    setHostLine("I'm listening. Say demo, or say sign in.");
     try {
       rec.start();
     } catch {
@@ -258,13 +262,17 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
       setMicOn(false);
       listenAfterTalk.current = false;
       setCue("idle");
+      setHostLine("");
       return;
     }
-    silence();
+    const question =
+      "Shall I open the demo, or do you want to sign in? Say demo and I'll take you in. Or say sign in, and type your university email on the right.";
     listenAfterTalk.current = true;
     setCue("hello");
+    setHostLine(question);
+    setTalking(true);
     speak(
-      "Shall I open the demo, or do you want to sign in? Say demo and I'll take you in. Or say sign in, and type your university email on the right.",
+      question,
       () => setTalking(true),
       () => {
         setTalking(false);
@@ -503,6 +511,11 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
           micActive={micOn}
           onMic={pressChest}
         />
+        {hostLine && (
+          <p className="tp-g1-caption" aria-live="assertive">
+            {hostLine}
+          </p>
+        )}
       </div>
 
       <aside
