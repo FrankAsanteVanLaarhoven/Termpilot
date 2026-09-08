@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { GrokBotMark, TermPilotLogo } from "@/components/GrokBotMark";
 import { GrokHumanoid, type GrokCue } from "@/components/GrokHumanoid";
 import { useI18n } from "@/components/Providers";
 import { api, readStudentSession, writeStudentSession } from "@/lib/api";
 import { universityEmailIssue } from "@/lib/universityEmail";
+import { silence, speak } from "@/lib/voice";
 import { rememberConnector } from "@/components/workspace";
 import type { GrokExpression } from "@/lib/splineGrokRig";
 
@@ -97,6 +98,9 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
   const [overCard, setOverCard] = useState(false);
   const [cue, setCue] = useState<GrokCue>("hello");
   const [line, setLine] = useState("Hi — I'm the G1 we engineered for TermPilot.");
+  const [talking, setTalking] = useState(false);
+  const [turning, setTurning] = useState(false);
+  const typingTimer = useRef<number | null>(null);
 
   useEffect(() => {
     const id = window.setTimeout(() => setReady(true), 240);
@@ -105,9 +109,12 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
     if (readGrokSession() && session) {
       setReturning({ email: session.email, displayName: session.displayName });
     }
+    say("hello", "Hi. I'm the G1 we engineered for TermPilot.", true);
     return () => {
       window.clearTimeout(id);
       window.clearTimeout(bye);
+      if (typingTimer.current) window.clearTimeout(typingTimer.current);
+      silence();
     };
   }, []);
 
@@ -131,9 +138,21 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
 
   const filteredTools = TOOLS.filter((item) => item.label.toLowerCase().includes(query.toLowerCase()));
 
-  function say(next: GrokCue, text: string) {
+  function say(next: GrokCue, text: string, voice = false) {
     setCue(next);
     setLine(text);
+    if (!voice) return;
+    speak(
+      text,
+      () => setTalking(true),
+      () => setTalking(false),
+    );
+  }
+
+  function typedCredentials() {
+    setTurning(true);
+    if (typingTimer.current) window.clearTimeout(typingTimer.current);
+    typingTimer.current = window.setTimeout(() => setTurning(false), 1600);
   }
 
   async function signIn() {
@@ -141,12 +160,12 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
     const mailIssue = universityEmailIssue(mail);
     if (mailIssue) {
       setError(mailIssue);
-      say("no", "That needs a real campus email — not a personal inbox.");
+      say("no", "That needs a real campus email — not a personal inbox.", true);
       return;
     }
     if (password.trim().length < 8) {
       setError("Choose a password of at least 8 characters. First visit creates your account.");
-      say("no", "Make the password at least 8 characters.");
+      say("no", "Make the password at least 8 characters.", true);
       return;
     }
     setError(null);
@@ -217,7 +236,7 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
   async function enterDemo() {
     if (signingIn || preparing) return;
     setError(null);
-    say("invite", "Opening the demo console.");
+    say("invite", "Opening the demo console.", true);
     setSigningIn(true);
     try {
       const profile = await api.demoLogin();
@@ -236,12 +255,12 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
     const mailIssue = universityEmailIssue(mail);
     if (mailIssue) {
       setError(mailIssue);
-      say("no", "That needs a real campus email — not a personal inbox.");
+      say("no", "That needs a real campus email — not a personal inbox.", true);
       return;
     }
     if (password.trim().length < 8) {
       setError("Choose a password of at least 8 characters. First visit creates your account.");
-      say("no", "Make the password at least 8 characters.");
+      say("no", "Make the password at least 8 characters.", true);
       return;
     }
     setError(null);
@@ -342,10 +361,21 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
       <div
         className="tp-splash-stage"
         onClick={() =>
-          say("hello", "Hi. I wave, turn, and point. After you enter, talk to Grok Bot — I run the tools, I don't complete assessed work.")
+          say(
+            "hello",
+            "Hi. I wave and point. After you enter, talk to Grok Bot — I run the tools, I don't complete assessed work.",
+            true,
+          )
         }
       >
-        <GrokHumanoid variant="splash" mood="idle" expression={expression} cue={cue} />
+        <GrokHumanoid
+          variant="splash"
+          mood="idle"
+          expression={expression}
+          cue={cue}
+          speaking={talking}
+          turning={turning}
+        />
         <div className={`tp-bot-hello ${overCard || cue === "point" ? "is-point" : ""}`}>{line}</div>
       </div>
 
@@ -412,7 +442,11 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
                   placeholder="you@your-university.edu"
                   value={email}
                   onFocus={() => say("listen", "I'm listening. Use the campus email your university issued you.")}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    typedCredentials();
+                  }}
+                  onBlur={() => setTurning(false)}
                 />
               </label>
               <label>
@@ -426,7 +460,11 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
                   placeholder="at least 8 characters"
                   value={password}
                   onFocus={() => say("yes", "At least 8 characters. I'll wait for you.")}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => {
+                    setPassword(e.target.value);
+                    typedCredentials();
+                  }}
+                  onBlur={() => setTurning(false)}
                 />
               </label>
               {accessRequired && (

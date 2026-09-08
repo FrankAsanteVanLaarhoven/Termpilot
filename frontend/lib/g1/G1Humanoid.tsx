@@ -22,6 +22,8 @@ export function G1Humanoid({
   fallback = null,
   allowXr = false,
   cue = "idle",
+  speaking = false,
+  turning = false,
 }: {
   mood?: G1Mood | string;
   expression?: G1Expression | string;
@@ -33,11 +35,15 @@ export function G1Humanoid({
   fallback?: ReactNode;
   allowXr?: boolean;
   cue?: G1Cue | string;
+  speaking?: boolean;
+  turning?: boolean;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const moodRef = useRef(mood);
   const expressionRef = useRef(expression);
   const cueRef = useRef(cue);
+  const speakingRef = useRef(speaking);
+  const turningRef = useRef(turning);
   const pointerRef = useRef<Pointer>({ x: 0, y: 0, overSignin: false });
   const xrRendererRef = useRef<{
     setSession: (session: XRSession) => Promise<void>;
@@ -50,6 +56,8 @@ export function G1Humanoid({
   moodRef.current = mood;
   expressionRef.current = expression;
   cueRef.current = cue;
+  speakingRef.current = speaking;
+  turningRef.current = turning;
 
   useEffect(() => {
     if (!allowXr) return;
@@ -319,20 +327,14 @@ export function G1Humanoid({
           const breath = Math.sin(t * 1.55) * 0.025;
           const gesture = active ? Math.sin(t * 3.1) * 0.23 : listening ? 0.16 : Math.sin(t * 0.72) * 0.035;
           const busy = cue === "listen" || cue === "think" || cue === "point" || cue === "no" || p.overSignin;
-          let spin = 0;
-          if (fullBody && !busy) {
-            const u = (t + 1.5) % 16;
-            if (u >= 7 && u < 9) spin = THREE.MathUtils.smootherstep((u - 7) / 2, 0, 1) * Math.PI;
-            else if (u >= 9 && u < 11.4) spin = Math.PI;
-            else if (u >= 11.4 && u < 13.6) spin = (1 - THREE.MathUtils.smootherstep((u - 11.4) / 2.2, 0, 1)) * Math.PI;
-          }
-          pivot.rotation.y += (spin - pivot.rotation.y) * 0.1;
-          const facing = 1 - Math.abs(spin) / Math.PI;
-          const greetPulse = t < 6 || (t % 16 > 0 && t % 16 < 3.2);
+          const spinTarget = fullBody && turningRef.current ? Math.PI : 0;
+          pivot.rotation.y += (spinTarget - pivot.rotation.y) * 0.09;
+          const facing = 1 - Math.min(Math.abs(pivot.rotation.y) / Math.PI, 1);
+          const greetPulse = t < 6.5 || (t % 12 > 0 && t % 12 < 2.8);
           const wantGreet =
             cue === "hello" ||
             cue === "wave" ||
-            (fullBody && greetPulse && !busy && facing > 0.75 && cue === "idle");
+            (fullBody && greetPulse && !busy && facing > 0.8 && !turningRef.current && cue === "idle");
           greetMix += ((wantGreet ? 1 : 0) - greetMix) * 0.14;
           pointMix += ((cue === "point" || (fullBody && p.overSignin) ? 1 : 0) - pointMix) * 0.16;
           listenMix += ((cue === "listen" || listening ? 1 : 0) - listenMix) * 0.12;
@@ -360,7 +362,7 @@ export function G1Humanoid({
           );
           setJoint(
             "right_shoulder_pitch_joint",
-            (-0.12 - breath + gesture - p.y * 0.08) * idle + -0.35 * g + -0.15 * pt - 0.25 * inviteMix - 0.2 * yesMix,
+            (-0.12 - breath + gesture - p.y * 0.08) * idle - 0.62 * g - 0.15 * pt - 0.25 * inviteMix - 0.2 * yesMix,
           );
           setJoint(
             "left_shoulder_roll_joint",
@@ -368,21 +370,21 @@ export function G1Humanoid({
           );
           setJoint(
             "right_shoulder_roll_joint",
-            (-0.14 + p.x * 0.08) * idle + -1.35 * g - 0.2 * pt - 0.55 * inviteMix - 0.4 * yesMix,
+            (-0.14 + p.x * 0.08) * idle - 0.42 * g - 0.2 * pt - 0.55 * inviteMix - 0.4 * yesMix,
           );
           setJoint("left_shoulder_yaw_joint", p.x * -0.12 * idle + 0.55 * pt + 0.35 * listenMix + 0.4 * thinkMix);
           setJoint("right_shoulder_yaw_joint", p.x * -0.12 * idle + 0.25 * g);
           setJoint("left_elbow_joint", (0.3 + Math.abs(gesture) * 0.42) * idle + 0.2 * pt + 0.35 * g + 1.1 * listenMix + 1.2 * thinkMix);
           setJoint(
             "right_elbow_joint",
-            (0.3 + (active ? 0.48 : 0.15)) * idle + (0.9 + wave * 0.85) * g + 0.35 * pt + 0.4 * inviteMix,
+            (0.3 + (active ? 0.48 : 0.15)) * idle + (1.15 + wave * 0.55) * g + 0.35 * pt + 0.4 * inviteMix,
           );
           setJoint("left_wrist_roll_joint", Math.sin(t * 1.15) * 0.11 * idle + 0.2 * pt);
-          setJoint("right_wrist_roll_joint", Math.sin(t * 1.15 + Math.PI) * 0.11 * idle + (wave * 1.6 - 0.8) * g);
+          setJoint("right_wrist_roll_joint", Math.sin(t * 1.15 + Math.PI) * 0.11 * idle + (wave * 1.35 - 0.65) * g);
           setJoint("left_wrist_pitch_joint", p.y * -0.12 * idle + 0.25 * pt);
           setJoint("right_wrist_pitch_joint", p.y * -0.12 * idle + 0.2 * g);
           setJoint("left_wrist_yaw_joint", p.x * 0.12 * idle + 0.5 * pt);
-          setJoint("right_wrist_yaw_joint", p.x * 0.12 * idle + 0.35 * g);
+          setJoint("right_wrist_yaw_joint", p.x * 0.12 * idle + (0.25 + wave * 0.55) * g);
 
           setJoint("left_hip_pitch_joint", -0.06 + hipSway + breath * 0.15);
           setJoint("right_hip_pitch_joint", -0.06 - hipSway - breath * 0.15);
@@ -429,9 +431,23 @@ export function G1Humanoid({
           key.position.z = 1.35 - p.x * 0.3;
           key.position.y = 2.6 - p.y * 0.16;
           rim.intensity = 24 + Math.sin(t * 1.2) * 2.4 + (active ? 6 : 0);
-          const pulse = 4.6 + Math.sin(t * 2.15) * 0.9 + (active ? 1.1 : 0);
-          neon.emissiveIntensity = pulse;
-          logoLight.intensity = 9.5 + Math.sin(t * 2.15) * 2.4 + (active ? 3 : 0);
+          const talking = speakingRef.current || g > 0.55;
+          const vu = talking
+            ? 0.4 + 0.6 * Math.abs(Math.sin(t * 17)) * (0.55 + 0.45 * Math.abs(Math.sin(t * 29)))
+            : 0;
+          if (talking) {
+            neon.color.setHex(0x22ff66);
+            neon.emissive.setHex(0x3ddc97);
+            neon.emissiveIntensity = 3.4 + vu * 9;
+            logoLight.color.setHex(0x3ddc97);
+            logoLight.intensity = 7 + vu * 20;
+          } else {
+            neon.color.setHex(0x00e5ff);
+            neon.emissive.setHex(0x00d4ff);
+            neon.emissiveIntensity = 4.6 + Math.sin(t * 2.15) * 0.9;
+            logoLight.color.setHex(0x33f0ff);
+            logoLight.intensity = 9.5 + Math.sin(t * 2.15) * 2.4;
+          }
           fill.position.z = -1.7 - p.x * 0.18;
           spot.position.set(2.35, 1.72 - p.y * 0.5, -p.x * 0.9);
           spot.target.position.set(0.08, 0.92 - p.y * 0.18, -p.x * 0.32);

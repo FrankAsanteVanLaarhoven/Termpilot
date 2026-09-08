@@ -17,6 +17,8 @@ export function GrokHumanoid({
   className = "",
   allowXr = false,
   cue = "idle",
+  speaking = false,
+  turning = false,
 }: {
   mood?: BotMood;
   expression?: GrokExpression;
@@ -24,6 +26,8 @@ export function GrokHumanoid({
   className?: string;
   allowXr?: boolean;
   cue?: GrokCue;
+  speaking?: boolean;
+  turning?: boolean;
 }) {
   const { tr } = useI18n();
   return (
@@ -35,6 +39,8 @@ export function GrokHumanoid({
       urdfUrl={URDF_HUMANOID}
       allowXr={allowXr}
       cue={cue}
+      speaking={speaking}
+      turning={turning}
       ariaLabel={`${tr("grokbot.name")} interactive humanoid`}
       loading={
         <Image
