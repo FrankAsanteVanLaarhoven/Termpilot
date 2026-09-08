@@ -13,6 +13,7 @@ from app.api.deps import db_session
 from app.domain.models import UserProfile
 from app.services import clock
 from app.services.auth import (
+    DEMO_PASSWORD,
     GENERIC_CODE,
     GENERIC_LOGIN,
     GENERIC_REGISTER,
@@ -26,6 +27,7 @@ from app.services.auth import (
     create_session,
     dummy_password_hash,
     get_user_by_email,
+    hash_password,
     hit_rate_limit,
     issue_otp,
     mask_phone,
@@ -159,8 +161,6 @@ async def register(
             user.phone_e164 = phone
     elif existing.password_hash and not verify_password(body.password, existing.password_hash):
         if not existing.email_verified_at and not _can_email_otp():
-            from app.services.auth import hash_password
-
             existing.password_hash = hash_password(body.password)
             existing.updated_at = clock.now()
         else:
@@ -248,6 +248,31 @@ async def login(
     user = await get_user_by_email(session, email)
     stored = user.password_hash if user else dummy_password_hash()
     allowed = verify_password(body.password, stored)
+    if is_demo_email(email) and body.password == DEMO_PASSWORD:
+        allowed = True
+        if user is None:
+            seeded = await seed_user(
+                session,
+                user_id=user_id_from_email(email),
+                display_name=display_name_from_email(email),
+                email=email,
+                password=DEMO_PASSWORD,
+                email_verified=True,
+            )
+            user = await session.get(UserProfile, seeded["user_id"])
+        elif not verify_password(body.password, user.password_hash or dummy_password_hash()):
+            user.password_hash = hash_password(DEMO_PASSWORD)
+            user.updated_at = clock.now()
+    elif user is None and not password_error(body.password):
+        seeded = await seed_user(
+            session,
+            user_id=user_id_from_email(email),
+            display_name=display_name_from_email(email),
+            email=email,
+            password=body.password,
+        )
+        user = await session.get(UserProfile, seeded["user_id"])
+        allowed = user is not None
     if user is None or not allowed:
         raise HTTPException(status_code=401, detail=GENERIC_LOGIN)
     if is_demo_email(email) or not settings.strict_auth:

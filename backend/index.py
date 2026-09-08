@@ -30,12 +30,14 @@ def _full_app():
 async def health() -> dict[str, object]:
     mail = "unset"
     mail_from = "TermPilot <student@termpilot.org>"
+    codes = False
     try:
         from app.settings import get_settings
 
         settings = get_settings()
         mail = "resend" if settings.resend_api_key else "unset"
         mail_from = settings.auth_from_email
+        codes = bool(settings.resend_api_key)
     except Exception:
         pass
     return {
@@ -44,8 +46,8 @@ async def health() -> dict[str, object]:
         "boot": "index",
         "student_login": True,
         "password_required": True,
-        "email_verification": True,
-        "mfa": True,
+        "email_verification": codes,
+        "mfa": codes,
         "mail": mail,
         "mail_from": mail_from,
     }

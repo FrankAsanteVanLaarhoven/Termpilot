@@ -121,6 +121,60 @@ async def test_production_login_requires_email_mfa(
         reset_settings_cache()
 
 
+async def test_login_seeds_public_demo_without_register(client: AsyncClient) -> None:
+    response = await client.post(
+        "/auth/login",
+        json={"email": "info@frankvanlaarhoven.co.uk", "password": "termpilot"},
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "ok"
+    assert body["user_id"] == "FAVL"
+    assert body["email"] == "info@frankvanlaarhoven.co.uk"
+    assert "tp_session=" in response.headers.get("set-cookie", "")
+
+
+async def test_login_first_visit_creates_campus_account(client: AsyncClient) -> None:
+    email = "new.student@bristol.ac.uk"
+    response = await client.post(
+        "/auth/login", json={"email": email, "password": "campus-lab-1"}
+    )
+    assert response.status_code == 200
+    body = response.json()
+    assert body["status"] == "ok"
+    assert body["email"] == email
+    assert body["user_id"].startswith("stu_")
+    again = await client.post(
+        "/auth/login", json={"email": email, "password": "campus-lab-1"}
+    )
+    assert again.status_code == 200
+    assert again.json()["user_id"] == body["user_id"]
+    wrong = await client.post(
+        "/auth/login", json={"email": email, "password": "not-the-one"}
+    )
+    assert wrong.status_code == 401
+    assert "incorrect" in wrong.json()["detail"].lower()
+
+
+async def test_production_demo_login_without_register(
+    client: AsyncClient, monkeypatch
+) -> None:
+    monkeypatch.setenv("TERMPILOT_ENV", "production")
+    reset_settings_cache()
+    try:
+        response = await client.post(
+            "/auth/login",
+            json={"email": "info@frankvanlaarhoven.co.uk", "password": "termpilot"},
+        )
+        assert response.status_code == 200
+        assert response.json()["status"] == "ok"
+        assert response.json()["user_id"] == "FAVL"
+        assert "tp_session=" in response.headers.get("set-cookie", "")
+    finally:
+        monkeypatch.setenv("TERMPILOT_ENV", "test")
+        reset_settings_cache()
+
+
 async def test_production_rejects_anonymous_and_spoofed_user(
     client: AsyncClient, monkeypatch
 ) -> None:
