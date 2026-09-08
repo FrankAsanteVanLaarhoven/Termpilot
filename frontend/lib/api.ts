@@ -136,6 +136,7 @@ export const api = {
     req<AuthSessionPayload>("/auth/verify-phone", { method: "POST", body: JSON.stringify(body) }),
   login: (body: { email: string; password: string; access_code?: string }) =>
     req<AuthSessionPayload>("/auth/login", { method: "POST", body: JSON.stringify(body) }),
+  demoLogin: () => req<AuthSessionPayload>("/auth/demo", { method: "POST", body: "{}" }),
   mfa: (body: { email: string; channel: string; code?: string }) =>
     req<AuthSessionPayload>("/auth/mfa", { method: "POST", body: JSON.stringify(body) }),
   logout: () => req<{ status: string }>("/auth/logout", { method: "POST" }),

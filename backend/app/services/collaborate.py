@@ -32,9 +32,9 @@ async def me(session: AsyncSession, user_id: str) -> dict[str, Any]:
     settings_demo = user_id == get_settings().demo_user_id
     return {
         "user_id": user_id,
-        "display_name": user.display_name if user else "Frank Van Laarhoven",
+        "display_name": user.display_name if user else "Demo student",
         "username": user.id if user else user_id,
-        "email": (user.email if user and user.email else "info@frankvanlaarhoven.co.uk"),
+        "email": (user.email if user and user.email else "demo@termpilot.org"),
         "timezone": user.timezone if user else "Europe/London",
         "role": "student",
         "plan": "demo",

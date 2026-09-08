@@ -40,6 +40,7 @@ from app.services.collaborate import me as current_profile
 from app.services.demo import prepare_student_workspace, seed_user
 from app.services.formatter import hash_identifier
 from app.services.identity import (
+    DEMO_EMAIL,
     display_name_from_email,
     is_demo_email,
     university_email_error,
@@ -85,6 +86,10 @@ def _can_email_otp() -> bool:
     return bool(settings.resend_api_key) or settings.env == "test" or bool(
         os.environ.get("PYTEST_CURRENT_TEST")
     )
+
+
+def _codes_required() -> bool:
+    return get_settings().codes_required
 
 
 async def _blocked(session: AsyncSession, action: str, request: Request, email: str) -> None:
@@ -160,7 +165,7 @@ async def register(
         if user is not None and phone:
             user.phone_e164 = phone
     elif existing.password_hash and not verify_password(body.password, existing.password_hash):
-        if not existing.email_verified_at and not _can_email_otp():
+        if not existing.email_verified_at and not _codes_required():
             existing.password_hash = hash_password(body.password)
             existing.updated_at = clock.now()
         else:
@@ -168,7 +173,7 @@ async def register(
             return {"status": "check_email", "detail": GENERIC_REGISTER}
     if is_demo_email(email):
         return await _finish_login(session, request, response, user_id_from_email(email))
-    if _can_email_otp():
+    if _codes_required():
         await issue_otp(session, user_id=user_id_from_email(email), dest=email, channel="email", purpose="signup")
         return {"status": "check_email", "detail": GENERIC_REGISTER}
     user = existing or await get_user_by_email(session, email)
@@ -228,6 +233,35 @@ async def verify_phone(
     return await _finish_login(session, request, response, user.id)
 
 
+@router.post("/auth/demo")
+async def demo_login(
+    request: Request,
+    response: Response,
+    session: AsyncSession = Depends(db_session),
+) -> dict[str, Any]:
+    _guard(response)
+    await _blocked(session, "demo", request, "demo")
+    settings = get_settings()
+    uid = settings.demo_user_id
+    user = await session.get(UserProfile, uid)
+    if user is None:
+        await seed_user(
+            session,
+            user_id=uid,
+            display_name="Demo student",
+            email=DEMO_EMAIL,
+            password=DEMO_PASSWORD,
+            email_verified=True,
+        )
+    else:
+        if user.email != DEMO_EMAIL:
+            user.email = DEMO_EMAIL
+        if user.display_name in {"Frank Van Laarhoven", None, ""}:
+            user.display_name = "Demo student"
+        user.updated_at = clock.now()
+    return await _finish_login(session, request, response, uid)
+
+
 @router.post("/auth/login")
 async def login(
     body: LoginIn,
@@ -275,11 +309,9 @@ async def login(
         allowed = user is not None
     if user is None or not allowed:
         raise HTTPException(status_code=401, detail=GENERIC_LOGIN)
-    if is_demo_email(email) or not settings.strict_auth:
+    if is_demo_email(email) or not _codes_required():
         return await _finish_login(session, request, response, user.id)
     if not user.email_verified_at:
-        if not _can_email_otp():
-            return await _finish_login(session, request, response, user.id)
         await issue_otp(session, user_id=user.id, dest=email, channel="email", purpose="signup")
         return {"status": "verify_email", "detail": GENERIC_REGISTER}
     if not _can_email_otp() and not (user.mfa_sms_enabled and user.phone_e164):

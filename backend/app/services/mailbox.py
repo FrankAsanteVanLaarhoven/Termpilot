@@ -25,7 +25,7 @@ from app.services.identity import get_connection, scoped_id
 from app.services.workspace import draft_email
 from app.settings import get_settings
 
-STUDENT_EMAIL = "info@frankvanlaarhoven.co.uk"
+STUDENT_EMAIL = "demo@termpilot.org"
 
 HIERARCHY: list[dict[str, str]] = [
     {

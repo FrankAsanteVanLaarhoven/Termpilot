@@ -37,7 +37,7 @@ async def health() -> dict[str, object]:
         settings = get_settings()
         mail = "resend" if settings.resend_api_key else "unset"
         mail_from = settings.auth_from_email
-        codes = bool(settings.resend_api_key)
+        codes = settings.codes_required
     except Exception:
         pass
     return {

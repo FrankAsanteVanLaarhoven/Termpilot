@@ -11,8 +11,6 @@ import type { GrokExpression } from "@/lib/splineGrokRig";
 
 export const GROKBOT_SESSION = "termpilot.grokbot.session";
 const ONBOARD_KEY = "termpilot.grokbot.onboard";
-const DEMO_EMAIL = "info@frankvanlaarhoven.co.uk";
-const DEMO_PASSWORD = "termpilot";
 
 const JOBS = [
   { id: "scout", label: "Deadline Scout", note: "Watch authorised sources so nothing due becomes a surprise.", tone: "coral" },
@@ -192,7 +190,22 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
         email: profile.email ?? mail,
         displayName: profile.display_name ?? "Student",
       });
-      setStep("jobs");
+      void finish();
+    }
+  }
+
+  async function enterDemo() {
+    if (signingIn || preparing) return;
+    setError(null);
+    setSigningIn(true);
+    try {
+      const profile = await api.demoLogin();
+      applyAuth(profile, profile.email ?? "demo@termpilot.org");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Could not reach TermPilot.";
+      setError(message.includes("fetch") ? "Cannot reach the TermPilot API. Try again in a moment." : message);
+    } finally {
+      setSigningIn(false);
     }
   }
 
@@ -252,35 +265,8 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
   async function enterFromLogo() {
     if (signingIn || preparing) return;
     if (!readStudentSession()) {
-      const mail = email.trim().toLowerCase();
-      const mailIssue = universityEmailIssue(mail);
-      if (mailIssue) {
-        setError(mailIssue);
-        return;
-      }
-      if (password.trim().length < 8) {
-        setError("Choose a password of at least 8 characters. First visit creates your account.");
-        return;
-      }
-      setSigningIn(true);
-      try {
-        const profile = await api.login({
-          email: mail,
-          password,
-          access_code: accessRequired ? accessCode || undefined : undefined,
-        });
-        applyAuth(profile, mail);
-        if (profile.status !== "ok" || !profile.user_id) {
-          setSigningIn(false);
-          return;
-        }
-      } catch (err) {
-        const message = err instanceof Error ? err.message : "Could not reach TermPilot.";
-        setError(message.includes("fetch") ? "Cannot reach the TermPilot API. Try again in a moment." : message);
-        setSigningIn(false);
-        return;
-      }
-      setSigningIn(false);
+      await enterDemo();
+      return;
     }
     await finish();
   }
@@ -342,8 +328,16 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
               <span>{tr("splash.engine")}</span>
             </h1>
             <p className="tp-splash-tag">{tr("splash.tagline")}</p>
-            <p className="tp-splash-hint">{tr("splash.members")}</p>
             <p className="tp-splash-hint">{tr("splash.publicDemo")}</p>
+            <button
+              type="button"
+              className="tp-splash-enter"
+              disabled={signingIn || preparing}
+              onClick={() => void enterDemo()}
+            >
+              {signingIn || preparing ? "Opening demo…" : tr("splash.demo")}
+            </button>
+            <p className="tp-splash-hint">{tr("splash.members")}</p>
             <form
               className="tp-login"
               onSubmit={(event) => {
@@ -371,16 +365,6 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
                   onChange={(e) => setPassword(e.target.value)}
                 />
               </label>
-              <label>
-                Mobile for SMS 2FA (optional)
-                <input
-                  type="tel"
-                  autoComplete="tel"
-                  placeholder="+447700900123"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                />
-              </label>
               {accessRequired && (
                 <label>
                   Classroom access code
@@ -393,53 +377,18 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
                   />
                 </label>
               )}
-              <label>
-                Optional xAI API key
-                <input
-                  type="password"
-                  autoComplete="off"
-                  placeholder="xai-… lives in this browser only"
-                  value={xaiKey}
-                  onChange={(e) => setXaiKey(e.target.value)}
-                />
-              </label>
-              {!mailReady && (
-                <p className="tp-login-error" role="alert">
-                  Verification email is not connected yet. In Vercel add RESEND_API_KEY. In Resend
-                  add domain termpilot.org and paste those DNS records in Hostinger without Reset DNS.
-                </p>
-              )}
               {error && (
                 <p className="tp-login-error" role="alert">
                   {error}
                 </p>
               )}
-              <button type="submit" className="tp-splash-enter" disabled={signingIn}>
+              <button type="submit" className="tp-onboard-back" disabled={signingIn || preparing}>
                 {signingIn ? "Connecting…" : tr("splash.enter")}
               </button>
-              <button type="button" className="tp-onboard-back" disabled={signingIn} onClick={() => void createAccount()}>
-                Create account and verify email
+              <button type="button" className="tp-onboard-back" disabled={signingIn || preparing} onClick={() => void createAccount()}>
+                {tr("splash.create")}
               </button>
-              <button
-                type="button"
-                className="tp-onboard-back"
-                onClick={() => {
-                  setEmail(DEMO_EMAIL);
-                  setPassword(DEMO_PASSWORD);
-                  setError(null);
-                }}
-              >
-                Use the member demo account
-              </button>
-              <p className="tp-splash-hint">
-                Public demo: {DEMO_EMAIL} · password {DEMO_PASSWORD}
-              </p>
             </form>
-            <p className="tp-splash-hint">
-              Register with your campus email. We send a hashed 6-digit code to that inbox (and to your
-              mobile if you add one). Sign-in uses an httpOnly cookie, not a token in local storage.
-              Personal Gmail or Outlook is not accepted.
-            </p>
             <p className="tp-splash-honest">{tr("splash.honest")}</p>
           </>
         )}

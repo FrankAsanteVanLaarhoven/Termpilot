@@ -19,11 +19,16 @@ from app.domain.models import (
     UserProfile,
 )
 from app.services import clock
-from app.services.identity import connection_id_for, display_name_from_email, is_demo_email
+from app.services.identity import (
+    DEMO_EMAIL,
+    connection_id_for,
+    display_name_from_email,
+    is_demo_email,
+)
 from app.settings import get_settings
 from app.storage.database import drop_db, init_db, reset_engine
 
-DEMO_USER_NAME = "Frank Van Laarhoven"
+DEMO_USER_NAME = "Demo student"
 DEMO_USERNAME = "FAVL"
 PUBLIC_GOAL = (
     "TermPilot, reconcile my academic and recruiting commitments for the next 14 days. "
@@ -74,7 +79,7 @@ async def seed_user(
         display_name=name or DEMO_USER_NAME,
         email=email
         if email and not is_demo_email(email)
-        else (email or "info@frankvanlaarhoven.co.uk"),
+        else (email or DEMO_EMAIL),
         password_hash=hash_password(secret) if secret else None,
         email_verified_at=now if verified else None,
         timezone=settings.timezone,

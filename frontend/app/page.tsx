@@ -170,7 +170,7 @@ export default function Page() {
       setMe({
         display_name: profile.display_name,
         user_id: profile.user_id,
-        email: profile.email ?? "info@frankvanlaarhoven.co.uk",
+        email: profile.email ?? "demo@termpilot.org",
       });
       const collab = await api.collaborate();
       setPeers(collab.peers);
@@ -361,9 +361,9 @@ export default function Page() {
           </div>
           <div className="mt-auto border-t border-transparent px-2 py-3">
             <AccountMenu
-              name={me?.display_name ?? "Frank Van Laarhoven"}
+              name={me?.display_name ?? "Demo student"}
               username={me?.user_id ?? "FAVL"}
-              email={me?.email ?? "info@frankvanlaarhoven.co.uk"}
+              email={me?.email ?? "demo@termpilot.org"}
               onOpen={(next) => {
                 setView(next);
                 setNavPinned(true);
@@ -730,7 +730,7 @@ export default function Page() {
           className="flex w-full items-center justify-between border-t border-steel bg-raised px-4 py-1 font-mono text-[10px] uppercase tracking-wider text-mute"
           onClick={() => setConsolePinned(true)}
         >
-          <span>Hover or click to open console · {me?.display_name ?? "Frank Van Laarhoven"} ({me?.user_id ?? "FAVL"})</span>
+          <span>Hover or click to open console · {me?.display_name ?? "Demo student"} ({me?.user_id ?? "FAVL"})</span>
           <span>Pin</span>
         </button>
       )}
@@ -739,7 +739,7 @@ export default function Page() {
         <div className="border-b border-steel px-4 py-2">
           <div className="mb-1 flex items-center justify-between">
             <label htmlFor="command" className="font-mono text-[10px] uppercase tracking-wider text-mute">
-              {tr("cmd.label")} — handler {busy ? "orchestrator" : "idle"} — {status} · {me?.display_name ?? "Frank Van Laarhoven"} ({me?.user_id ?? "FAVL"})
+              {tr("cmd.label")} — handler {busy ? "orchestrator" : "idle"} — {status} · {me?.display_name ?? "Demo student"} ({me?.user_id ?? "FAVL"})
             </label>
             <button
               className="font-mono text-[10px] uppercase text-mute"

@@ -10,7 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.domain.models import SourceConnection
 from app.settings import get_settings
 
-DEMO_EMAILS = {"info@frankvanlaarhoven.co.uk"}
+DEMO_EMAIL = "demo@termpilot.org"
+DEMO_EMAILS = {DEMO_EMAIL}
 EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 ACADEMIC_SLDS = frozenset({"edu", "ac"})
 CONSUMER_DOMAINS = frozenset(
@@ -272,9 +273,7 @@ def is_valid_email(email: str) -> bool:
 
 
 def is_demo_email(email: str) -> bool:
-    value = normalize_email(email)
-    local = value.split("@")[0]
-    return value in DEMO_EMAILS or "favl" in local
+    return normalize_email(email) in DEMO_EMAILS
 
 
 def _host_parents(host: str) -> list[str]:
@@ -350,7 +349,7 @@ def user_id_from_email(email: str) -> str:
 
 def display_name_from_email(email: str) -> str:
     if is_demo_email(email):
-        return "Frank Van Laarhoven"
+        return "Demo student"
     local = normalize_email(email).split("@")[0]
     parts = [part for part in re.split(r"[._+\-]+", local) if part]
     if not parts:

@@ -6,7 +6,7 @@ from httpx import AsyncClient
 async def test_me_and_task_invite(client: AsyncClient) -> None:
     await client.post("/demo/reset")
     me = (await client.get("/me")).json()
-    assert me["display_name"] == "Frank Van Laarhoven"
+    assert me["display_name"] == "Demo student"
     assert me["username"] == "FAVL"
     assert me["synthetic"] is True
     await client.post(

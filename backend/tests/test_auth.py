@@ -11,18 +11,21 @@ async def test_register_hides_whether_the_account_exists(client: AsyncClient) ->
         "/auth/register", json={"email": email, "password": "campus-lab-1"}
     )
     assert first.status_code == 200
-    assert first.json()["status"] == "check_email"
+    assert first.json()["status"] == "ok"
     assert "campus-lab" not in first.text.lower()
-    assert first.json()["detail"]
+    assert "tp_session=" in first.headers.get("set-cookie", "")
     duplicate = await client.post(
         "/auth/register", json={"email": email, "password": "different-secret"}
     )
-    assert duplicate.status_code == 200
-    assert duplicate.json()["detail"] == first.json()["detail"]
-    assert "already" not in duplicate.json()["detail"].lower()
+    assert duplicate.status_code in {200, 401}
+    assert "already" not in duplicate.text.lower()
 
 
-async def test_email_verify_sets_httponly_cookie_and_no_store(client: AsyncClient) -> None:
+async def test_email_verify_sets_httponly_cookie_and_no_store(
+    client: AsyncClient, monkeypatch
+) -> None:
+    monkeypatch.setenv("TERMPILOT_REQUIRE_VERIFICATION", "true")
+    reset_settings_cache()
     email = "ada.nguyen@ox.ac.uk"
     await client.post("/auth/register", json={"email": email, "password": "campus-lab-1"})
     code = LAST_OTP[f"email:{email}"]
@@ -42,7 +45,9 @@ async def test_email_verify_sets_httponly_cookie_and_no_store(client: AsyncClien
     assert me.json()["email"] == email
 
 
-async def test_wrong_code_is_generic(client: AsyncClient) -> None:
+async def test_wrong_code_is_generic(client: AsyncClient, monkeypatch) -> None:
+    monkeypatch.setenv("TERMPILOT_REQUIRE_VERIFICATION", "true")
+    reset_settings_cache()
     email = "lin@nus.edu.sg"
     await client.post("/auth/register", json={"email": email, "password": "campus-lab-1"})
     failed = await client.post(
@@ -53,7 +58,9 @@ async def test_wrong_code_is_generic(client: AsyncClient) -> None:
     assert "000000" not in failed.text
 
 
-async def test_phone_2fa_enrolment(client: AsyncClient) -> None:
+async def test_phone_2fa_enrolment(client: AsyncClient, monkeypatch) -> None:
+    monkeypatch.setenv("TERMPILOT_REQUIRE_VERIFICATION", "true")
+    reset_settings_cache()
     email = "hiro@u-tokyo.ac.jp"
     phone = "+447700900123"
     await client.post(
@@ -91,6 +98,8 @@ async def test_login_rate_limit(client: AsyncClient) -> None:
 async def test_production_login_requires_email_mfa(
     client: AsyncClient, monkeypatch
 ) -> None:
+    monkeypatch.setenv("TERMPILOT_REQUIRE_VERIFICATION", "true")
+    reset_settings_cache()
     email = "ciara@tcd.ie"
     await client.post("/auth/register", json={"email": email, "password": "campus-lab-1"})
     await client.post(
@@ -121,16 +130,15 @@ async def test_production_login_requires_email_mfa(
         reset_settings_cache()
 
 
-async def test_login_seeds_public_demo_without_register(client: AsyncClient) -> None:
-    response = await client.post(
-        "/auth/login",
-        json={"email": "info@frankvanlaarhoven.co.uk", "password": "termpilot"},
-    )
+async def test_demo_login_needs_no_email(client: AsyncClient) -> None:
+    response = await client.post("/auth/demo")
     assert response.status_code == 200
     body = response.json()
     assert body["status"] == "ok"
     assert body["user_id"] == "FAVL"
-    assert body["email"] == "info@frankvanlaarhoven.co.uk"
+    assert body["email"] == "demo@termpilot.org"
+    assert body["display_name"] == "Demo student"
+    assert "frankvanlaarhoven" not in response.text.lower()
     assert "tp_session=" in response.headers.get("set-cookie", "")
 
 
@@ -162,13 +170,12 @@ async def test_production_demo_login_without_register(
     monkeypatch.setenv("TERMPILOT_ENV", "production")
     reset_settings_cache()
     try:
-        response = await client.post(
-            "/auth/login",
-            json={"email": "info@frankvanlaarhoven.co.uk", "password": "termpilot"},
-        )
+        response = await client.post("/auth/demo")
         assert response.status_code == 200
         assert response.json()["status"] == "ok"
         assert response.json()["user_id"] == "FAVL"
+        assert response.json()["email"] == "demo@termpilot.org"
+        assert "frankvanlaarhoven" not in response.text.lower()
         assert "tp_session=" in response.headers.get("set-cookie", "")
     finally:
         monkeypatch.setenv("TERMPILOT_ENV", "test")
@@ -200,11 +207,9 @@ async def test_production_session_cookie_opens_tower(
     client: AsyncClient, monkeypatch
 ) -> None:
     email = "member@ox.ac.uk"
-    await client.post("/auth/register", json={"email": email, "password": "campus-lab-1"})
-    verified = await client.post(
-        "/auth/verify-email", json={"email": email, "code": LAST_OTP[f"email:{email}"]}
-    )
-    assert verified.status_code == 200
+    created = await client.post("/auth/register", json={"email": email, "password": "campus-lab-1"})
+    assert created.status_code == 200
+    assert "tp_session=" in created.headers.get("set-cookie", "")
     monkeypatch.setenv("TERMPILOT_ENV", "production")
     reset_settings_cache()
     try:

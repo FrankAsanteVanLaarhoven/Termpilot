@@ -281,8 +281,8 @@ export function SignInGate({ onEnter }: { onEnter: () => void }) {
         <div className="mt-4 flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-full border border-steel">F</div>
           <div>
-            <div>Frank Van Laarhoven</div>
-            <div className="font-mono text-[11px] text-mute">FAVL · info@frankvanlaarhoven.co.uk</div>
+            <div>Demo student</div>
+            <div className="font-mono text-[11px] text-mute">TermPilot demo</div>
           </div>
         </div>
         <button

@@ -20,8 +20,7 @@ def test_worldwide_campus_emails_are_accepted() -> None:
         "priya@utoronto.ca",
         "daan@tudelft.nl",
         "ciara@tcd.ie",
-        "info@frankvanlaarhoven.co.uk",
-        "favl.demo@example.com",
+        "demo@termpilot.org",
         "student@mail.harvard.edu",
         "name@uni-heidelberg.de",
         "name@maastrichtuniversity.nl",
@@ -45,6 +44,7 @@ def test_personal_and_non_campus_emails_are_rejected() -> None:
         "ada@proton.me",
         "name@company.com",
         "name@frankvanlaarhoven.co.uk",
+        "info@frankvanlaarhoven.co.uk",
         "name@something.co.uk",
     ]
     for email in rejected:

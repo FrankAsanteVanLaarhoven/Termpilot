@@ -39,6 +39,7 @@ class Settings(BaseSettings):
     timezone: str = Field(default="Europe/London", alias="TERMPILOT_TIMEZONE")
     now_override: str | None = Field(default="2026-09-05T08:00:00+01:00", alias="TERMPILOT_NOW")
     demo_user_id: str = Field(default="FAVL", alias="TERMPILOT_DEMO_USER_ID")
+    require_verification: bool = Field(default=False, alias="TERMPILOT_REQUIRE_VERIFICATION")
     access_code: str | None = Field(default=None, alias="TERMPILOT_ACCESS_CODE")
     university_domains_extra: str = Field(default="", alias="TERMPILOT_UNIVERSITY_DOMAINS")
 
@@ -169,6 +170,14 @@ class Settings(BaseSettings):
     def strict_auth(self) -> bool:
         return self.env == "production"
 
+    @property
+    def codes_required(self) -> bool:
+        if not self.require_verification:
+            return False
+        return bool(self.resend_api_key) or self.env == "test" or bool(
+            os.environ.get("PYTEST_CURRENT_TEST")
+        )
+
     @field_validator(
         "xai_api_key",
         "openrouter_api_key",
@@ -207,6 +216,15 @@ class Settings(BaseSettings):
     def empty_key_to_none(cls, value: object) -> object:
         if value == "":
             return None
+        return value
+
+    @field_validator("require_verification", mode="before")
+    @classmethod
+    def blank_bool_false(cls, value: object) -> object:
+        if value in {"", None}:
+            return False
+        if isinstance(value, str):
+            return value.strip().lower() in {"1", "true", "yes", "on"}
         return value
 
     @property

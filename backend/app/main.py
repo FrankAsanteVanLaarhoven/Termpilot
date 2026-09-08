@@ -80,8 +80,8 @@ def create_app() -> FastAPI:
             "access_code_required": bool(settings.access_code),
             "student_login": True,
             "password_required": True,
-            "email_verification": settings.strict_auth,
-            "mfa": settings.strict_auth,
+            "email_verification": settings.codes_required,
+            "mfa": settings.codes_required,
             "mail": "resend" if settings.resend_api_key else "unset",
             "mail_from": settings.auth_from_email,
         }

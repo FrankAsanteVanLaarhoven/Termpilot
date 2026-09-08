@@ -223,11 +223,10 @@ async def session_bootstrap(
         }
     profile_row = existing or await session.get(UserProfile, user_id)
     if (
-        settings.strict_auth
+        settings.codes_required
         and not is_demo_email(email)
         and profile_row is not None
         and not profile_row.email_verified_at
-        and (settings.resend_api_key or settings.env == "test")
     ):
         await issue_otp(
             session,

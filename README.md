@@ -37,8 +37,8 @@ Students live across LMS, email, calendar, GitHub, Notion, Slack, Jira and more.
 1. Open [termpilot.org](https://termpilot.org) (or local `http://127.0.0.1:3000`).
 2. Sign in with the email your university issued (`.edu`, `.ac.uk`, `.edu.au`, `.ac.jp`, and other campus domains worldwide). Personal Gmail/Outlook is rejected.
 3. First visit creates an isolated account (password hashed with PBKDF2-SHA256). Next visit signs you back in with an **httpOnly** session cookie.
-4. Optional: verify email / SMS 2FA when Resend or Twilio is configured. Until mail is connected, the product will not trap you on a code screen.
-5. **Public demo** (no campus inbox required): `info@frankvanlaarhoven.co.uk` / `termpilot`.
+4. Email verification is off for now. A real campus email is enough to create an account.
+5. **Public demo:** tap **Try the demo**. No email or password. Your own workspace still needs a campus email.
 
 Each student is namespaced (`stu_<hash>`). Demo identity stays `FAVL`. Queries never cross accounts.
 
@@ -202,12 +202,9 @@ docker compose up --build
 
 ### Public demo
 
-| | |
-| --- | --- |
-| Email | `info@frankvanlaarhoven.co.uk` |
-| Password | `termpilot` |
+Tap **Try the demo** on the splash. No email is required.
 
-Or create an isolated student account with any real campus email.
+To keep your own workspace, **Create account** with a real campus email and password. Personal Gmail/Outlook is rejected. Verification codes stay off until they are turned on later.
 
 ### Tests
 
