@@ -23,14 +23,11 @@ export function voiceUnlocked(): boolean {
   return unlocked;
 }
 
-/** Chrome blocks speech until a click/tap. Call this from a pointer handler. */
+/** Mark this tab as allowed to speak. Must run inside a click/tap. */
 export function unlockVoice(): void {
-  if (typeof window === "undefined" || !window.speechSynthesis || unlocked) return;
+  if (typeof window === "undefined" || !window.speechSynthesis) return;
   unlocked = true;
-  const kick = new SpeechSynthesisUtterance(".");
-  kick.volume = 0;
-  kick.rate = 2;
-  window.speechSynthesis.speak(kick);
+  window.speechSynthesis.resume();
   if (resumeTimer == null) {
     resumeTimer = window.setInterval(() => {
       if (window.speechSynthesis.speaking) window.speechSynthesis.resume();
@@ -59,25 +56,21 @@ export function speak(
     window.setTimeout(done, Math.min(12000, Math.max(2800, text.split(/\s+/).length * 260)));
     return;
   }
-  // Chrome drops the next utterance if speak() follows cancel() in the same tick.
-  window.speechSynthesis.cancel();
+  unlocked = true;
+  window.speechSynthesis.resume();
+  const utterance = new SpeechSynthesisUtterance(text);
+  utterance.lang = "en-GB";
+  const voice = pickVoice();
+  if (voice) utterance.voice = voice;
+  utterance.rate = 1.02;
+  utterance.pitch = 1.04;
+  utterance.onstart = start;
+  utterance.onend = done;
+  utterance.onerror = done;
+  start();
+  window.speechSynthesis.speak(utterance);
   const wait = Math.min(16000, Math.max(3200, text.split(/\s+/).length * 280));
-  const run = () => {
-    if (gen !== speakGen) return;
-    const utterance = new SpeechSynthesisUtterance(text);
-    const voice = pickVoice();
-    if (voice) utterance.voice = voice;
-    utterance.rate = 1.02;
-    utterance.pitch = 1.04;
-    utterance.onstart = start;
-    utterance.onend = done;
-    utterance.onerror = done;
-    start();
-    window.speechSynthesis.resume();
-    window.speechSynthesis.speak(utterance);
-    window.setTimeout(done, wait);
-  };
-  window.setTimeout(run, 90);
+  window.setTimeout(done, wait);
 }
 
 export function silence(): void {

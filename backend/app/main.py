@@ -146,7 +146,7 @@ def create_app() -> FastAPI:
         response.headers["X-Content-Type-Options"] = "nosniff"
         response.headers["X-Frame-Options"] = "DENY"
         response.headers["Permissions-Policy"] = (
-            "camera=(), microphone=(), geolocation=(), display-capture=()"
+            "camera=(), microphone=(self), geolocation=(), display-capture=()"
         )
         response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, private"
         response.headers["Pragma"] = "no-cache"

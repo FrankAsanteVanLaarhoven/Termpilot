@@ -238,12 +238,11 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
       rec.start();
     } catch {
       setMicOn(false);
-      say("no", "The microphone did not start.", true);
+      say("listen", "The microphone did not start.", true);
     }
   }
 
-  async function pressChest() {
-    unlockVoice();
+  function pressChest() {
     greetedRef.current = true;
     pendingLine.current = null;
     if (micOn) {
@@ -253,17 +252,16 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
       setCue("idle");
       return;
     }
+    // Start the mic prompt in this same click. Do not await first — a delayed
+    // getUserMedia is treated as not a user gesture and never shows Allow.
+    const mic =
+      typeof navigator !== "undefined" && navigator.mediaDevices?.getUserMedia
+        ? navigator.mediaDevices.getUserMedia({ audio: true })
+        : Promise.reject(new Error("no-mic"));
+    unlockVoice();
+    listenAfterTalk.current = true;
     setCue("hello");
     setTalking(true);
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      stream.getTracks().forEach((track) => track.stop());
-    } catch {
-      setTalking(false);
-      say("no", "Allow the microphone when your browser asks, and I can hear you.", true);
-      return;
-    }
-    listenAfterTalk.current = true;
     speak(
       "Shall I open the demo, or do you want to sign in? Say demo and I'll take you in. Or say sign in, and type your university email on the right.",
       () => setTalking(true),
@@ -271,7 +269,15 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
         setTalking(false);
         if (!listenAfterTalk.current) return;
         listenAfterTalk.current = false;
-        void startListen();
+        void mic
+          .then((stream) => {
+            stream.getTracks().forEach((track) => track.stop());
+            void startListen();
+          })
+          .catch(() => {
+            setCue("listen");
+            speak("Allow the microphone. Use the popup or the lock icon in the address bar.", () => setTalking(true), () => setTalking(false));
+          });
       },
     );
   }
