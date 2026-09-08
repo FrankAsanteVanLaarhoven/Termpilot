@@ -50,6 +50,7 @@ async def health() -> dict[str, object]:
         "mfa": codes,
         "mail": mail,
         "mail_from": mail_from,
+        "origin": "FAVL-TP-D88A5B6D3CD1",
     }
 
 

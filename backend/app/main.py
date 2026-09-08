@@ -84,6 +84,7 @@ def create_app() -> FastAPI:
             "mfa": settings.codes_required,
             "mail": "resend" if settings.resend_api_key else "unset",
             "mail_from": settings.auth_from_email,
+            "origin": "FAVL-TP-D88A5B6D3CD1",
         }
 
     load_error: str | None = None

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { readStudentSession } from "@/lib/api";
+import { ORIGIN_MARK } from "@/lib/origin";
 
 function isEditable(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
@@ -43,7 +44,7 @@ export function MemberShield({ children }: { children: React.ReactNode }) {
       <div className="tp-member-mark" aria-hidden>
         {tiles.map((i) => (
           <span key={i}>
-            {label} · TermPilot member · confidential
+            {label} · {ORIGIN_MARK} · confidential
           </span>
         ))}
       </div>
