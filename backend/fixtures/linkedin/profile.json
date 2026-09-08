@@ -1,0 +1,12 @@
+{
+  "handle": "a-rivera-demo",
+  "headline": "Robotics MSc student · seeking internships",
+  "opportunities": [
+    {
+      "id": "li-aurora",
+      "title": "Aurora Robotics internship",
+      "due_at": "2026-09-15T17:00:00+01:00",
+      "note": "Matches the recruiting email already in TermPilot."
+    }
+  ]
+}

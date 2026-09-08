@@ -1,0 +1,17 @@
+{
+  "account": "demo-drive",
+  "files": [
+    {
+      "id": "gd-notes",
+      "name": "CSC0000 lab notes (reference)",
+      "kind": "document",
+      "note": "Read-only snapshot. TermPilot will not complete assessed write-ups."
+    },
+    {
+      "id": "gd-plan",
+      "name": "Week plan draft",
+      "kind": "spreadsheet",
+      "note": "Personal planning sheet."
+    }
+  ]
+}

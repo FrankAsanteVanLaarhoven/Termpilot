@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+
+# Node
+node_modules/
+frontend/.next/
+frontend/out/
+frontend/test-results/
+frontend/playwright-report/
+frontend/blob-report/
+*.tsbuildinfo
+
+# Env / secrets
+.env
+.env.local
+.env.*.local
+.vercel
+packages/g1-humanoid/dist/
+*.pem
+*.key
+
+# Data
+backend/termpilot.db
+backend/termpilot.db-journal
+backend/termpilot.db-wal
+backend/termpilot.db-shm
+data/
+*.sqlite3
+demo-calendar.ics
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Logs
+*.log
+backend/logs/
+
+# Playwright
+playwright/.cache/
+docs/demo/*.webm
+
+# Local Spline / agent scratch
+*.splinecode.bak
+.grok/*.log

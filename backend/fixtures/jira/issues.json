@@ -1,0 +1,18 @@
+{
+  "site": "northbridge.atlassian.net",
+  "project": "CSC",
+  "issues": [
+    {
+      "key": "CSC-14",
+      "summary": "Book robotics lab bench for 9 Sep",
+      "status": "To Do",
+      "note": "Facilities task. Not assessed work."
+    },
+    {
+      "key": "CSC-15",
+      "summary": "Ethics worksheet review slot",
+      "status": "In Progress",
+      "note": "Scheduling only. TermPilot will not write the worksheet."
+    }
+  ]
+}

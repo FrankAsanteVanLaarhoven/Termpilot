@@ -1,0 +1,21 @@
+{
+  "name": "@termpilot/g1-humanoid",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Reusable FAVL G1 web humanoid: URDF load, neon FAVL chest mark, neck-pivoted gaze, cursor spotlight, conversation motion.",
+  "type": "module",
+  "main": "src/G1Humanoid.tsx",
+  "files": [
+    "src",
+    "README.md",
+    "CAPABILITIES.md"
+  ],
+  "peerDependencies": {
+    "react": ">=18",
+    "three": "^0.185.0",
+    "urdf-loader": "^0.13.0"
+  },
+  "scripts": {
+    "pack": "node scripts/pack.mjs"
+  }
+}

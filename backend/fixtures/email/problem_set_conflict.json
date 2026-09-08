@@ -1,0 +1,10 @@
+{
+  "id": "eml-problem-set-conflict",
+  "source_reference": "fixtures/email/problem_set_conflict.json",
+  "source_authority": "secondary",
+  "observed_at": "2026-09-04T14:27:00+01:00",
+  "from": "j.okonkwo@northbridge.example",
+  "to": "csc0000-cohort@northbridge.example",
+  "subject": "CSC0000 problem set — please submit Monday 09:00",
+  "body": "Hi all,\n\nQuick correction from the teaching team: the Control Systems Problem Set should be submitted by Monday 14 September 2026 at 09:00 BST, before the lab. I realise the LMS still shows Wednesday 16 September 12:00.\n\nPlease treat Monday 09:00 as the working deadline until we can update the LMS.\n\nDr J. Okonkwo\n"
+}

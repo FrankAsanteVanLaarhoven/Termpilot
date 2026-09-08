@@ -1,0 +1,93 @@
+{
+  "disclaimer": "Synthetic student mailbox. TermPilot never sends SMTP. Cleanup archives clutter only; P0/P1 academic mail is kept.",
+  "items": [
+    {
+      "id": "mail_cas",
+      "from": "international@northbridge.example",
+      "to": "info@frankvanlaarhoven.co.uk",
+      "subject": "CAS / enrolment checklist — action today",
+      "excerpt": "Bring passport, visa or BRP, and enrolment letter. Official rules stay on GOV.UK.",
+      "observed_at": "2026-09-05T07:10:00+01:00",
+      "priority": "p0",
+      "category": "visa",
+      "suggested_action": "alert"
+    },
+    {
+      "id": "mail_deadline",
+      "from": "j.okonkwo@northbridge.example",
+      "to": "info@frankvanlaarhoven.co.uk",
+      "subject": "CSC0000 problem set — Monday 09:00 not Wednesday",
+      "excerpt": "Working deadline is Monday 14 Sep 09:00 BST until the LMS is updated.",
+      "observed_at": "2026-09-04T14:27:00+01:00",
+      "priority": "p0",
+      "category": "deadline",
+      "suggested_action": "draft"
+    },
+    {
+      "id": "mail_lab",
+      "from": "module-office@northbridge.example",
+      "to": "info@frankvanlaarhoven.co.uk",
+      "subject": "Reminder: Lab Report still due Friday 18 Sep 16:00",
+      "excerpt": "Robotics Lab Report for CSC0000 remains due Friday 18 September 2026 at 16:00 BST.",
+      "observed_at": "2026-09-04T14:27:00+01:00",
+      "priority": "p1",
+      "category": "university",
+      "suggested_action": "keep"
+    },
+    {
+      "id": "mail_careers",
+      "from": "careers@northbridge.example",
+      "to": "info@frankvanlaarhoven.co.uk",
+      "subject": "Autumn internship clinic — book a slot",
+      "excerpt": "20-minute CV clinic with the university careers team. No applications are sent for you.",
+      "observed_at": "2026-09-04T10:00:00+01:00",
+      "priority": "p1",
+      "category": "career",
+      "suggested_action": "keep"
+    },
+    {
+      "id": "mail_union",
+      "from": "union@northbridge.example",
+      "to": "info@frankvanlaarhoven.co.uk",
+      "subject": "Students' Union weekly: welcome fair and course reps",
+      "excerpt": "Visit the SU advice desk. TermPilot is not your union.",
+      "observed_at": "2026-09-03T09:00:00+01:00",
+      "priority": "p2",
+      "category": "society",
+      "suggested_action": "archive"
+    },
+    {
+      "id": "mail_newsletter",
+      "from": "digest@campus-noise.example",
+      "to": "info@frankvanlaarhoven.co.uk",
+      "subject": "This week on campus: 12 events you might have missed",
+      "excerpt": "Society round-up and vendor stalls. Not an academic deadline.",
+      "observed_at": "2026-09-03T18:00:00+01:00",
+      "priority": "p2",
+      "category": "newsletter",
+      "suggested_action": "archive"
+    },
+    {
+      "id": "mail_promo_laptops",
+      "from": "deals@studygear.example",
+      "to": "info@frankvanlaarhoven.co.uk",
+      "subject": "40% off laptops — student flash sale",
+      "excerpt": "Marketing mail. Not from the university.",
+      "observed_at": "2026-09-02T21:15:00+01:00",
+      "priority": "p3",
+      "category": "promo",
+      "suggested_action": "archive"
+    },
+    {
+      "id": "mail_promo_bank",
+      "from": "hello@campus-bank.example",
+      "to": "info@frankvanlaarhoven.co.uk",
+      "subject": "Open an account, get a railcard (ad)",
+      "excerpt": "Unsolicited student-bank promo.",
+      "observed_at": "2026-09-01T08:00:00+01:00",
+      "priority": "p3",
+      "category": "promo",
+      "suggested_action": "archive"
+    }
+  ]
+}

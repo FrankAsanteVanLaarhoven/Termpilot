@@ -1,0 +1,22 @@
+{
+  "pages": [
+    {
+      "id": "nt-lab",
+      "title": "CSC0000 lab dump",
+      "body": "Encoder drift, need plots, cite week-2 sheet. Do not complete the assessed write-up here.",
+      "tags": ["csc0000", "inbox"]
+    },
+    {
+      "id": "nt-intern",
+      "title": "Aurora application scraps",
+      "body": "CV bullet on ROS labs. Written task still open.",
+      "tags": ["recruiting", "inbox"]
+    },
+    {
+      "id": "nt-random",
+      "title": "Buy milk",
+      "body": "Personal, not academic.",
+      "tags": ["personal"]
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "meetings": [
+    {
+      "id": "mtg-lab-brief",
+      "title": "CSC0000 lab briefing",
+      "start_at": "2026-09-08T09:30:00+01:00",
+      "end_at": "2026-09-08T09:50:00+01:00",
+      "join_url": "https://meet.example.edu/csc0000-lab-brief",
+      "provider": "university-meet"
+    },
+    {
+      "id": "mtg-soc",
+      "title": "Robotics Society workshop",
+      "start_at": "2026-09-09T18:00:00+01:00",
+      "end_at": "2026-09-09T20:00:00+01:00",
+      "join_url": "https://meet.example.edu/robotics-soc-workshop",
+      "provider": "university-meet"
+    },
+    {
+      "id": "mtg-careers",
+      "title": "Aurora recruiting office hours",
+      "start_at": "2026-09-11T16:00:00+01:00",
+      "end_at": "2026-09-11T16:30:00+01:00",
+      "join_url": "https://meet.example.edu/aurora-office-hours",
+      "provider": "university-meet"
+    }
+  ]
+}

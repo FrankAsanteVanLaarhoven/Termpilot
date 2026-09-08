@@ -1,0 +1,15 @@
+{
+  "workspace": "Northbridge Robotics Soc (synthetic)",
+  "channels": [
+    {
+      "id": "ch-lab",
+      "name": "#csc0000-lab",
+      "topic": "Lab pairing and room changes"
+    },
+    {
+      "id": "ch-soc",
+      "name": "#robotics-soc",
+      "topic": "Workshop 9 Sep 18:00"
+    }
+  ]
+}

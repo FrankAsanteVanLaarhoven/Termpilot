@@ -1,0 +1,12 @@
+{
+  "note": "First-party plugin names only. No secrets, no custom MCP, no personal connectors.",
+  "official_plugins": [],
+  "skills": [
+    "extract-obligations",
+    "verify-deadlines",
+    "build-feasible-plan",
+    "safe-calendar-write",
+    "privacy-and-integrity-check"
+  ],
+  "routines": ["monitor"]
+}

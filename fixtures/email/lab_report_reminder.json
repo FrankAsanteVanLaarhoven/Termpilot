@@ -1,0 +1,10 @@
+{
+  "id": "eml-lab-report-reminder",
+  "source_reference": "fixtures/email/lab_report_reminder.json",
+  "source_authority": "secondary",
+  "observed_at": "2026-09-04T14:27:00+01:00",
+  "from": "module-office@northbridge.example",
+  "to": "a.rivera@student.example",
+  "subject": "Reminder: Lab Report (Robotics) still due Friday 18 Sep 16:00",
+  "body": "Hello A.,\n\nThis is a reminder that the Robotics Lab Report for CSC0000 remains due on Friday 18 September 2026 at 16:00 BST. Please submit via the LMS dropbox. Estimated effort is about six hours.\n\nModule office\n"
+}

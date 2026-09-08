@@ -1,0 +1,64 @@
+{
+  "source": "synthetic-lms",
+  "source_reference": "fixtures/lms/modules.json",
+  "source_authority": "primary",
+  "observed_at": "2026-09-04T08:15:00+01:00",
+  "institution": "Northbridge University (synthetic)",
+  "student_id": "FAVL",
+  "modules": [
+    {
+      "code": "CSC0000",
+      "title": "Robotics Systems",
+      "assignments": [
+        {
+          "id": "lms-csc0000-lab-report",
+          "title": "Robotics Lab Report",
+          "due_at": "2026-09-18T16:00:00+01:00",
+          "estimated_minutes": 360,
+          "priority": "high",
+          "description": "Write up the week-2 manipulator experiment. Submit as PDF to the LMS dropbox."
+        },
+        {
+          "id": "lms-csc0000-problem-set",
+          "title": "Control Systems Problem Set",
+          "due_at": "2026-09-16T12:00:00+01:00",
+          "estimated_minutes": 240,
+          "priority": "high",
+          "description": "Questions 1-8 on feedback linearisation. LMS due Wednesday 16 Sep 12:00."
+        },
+        {
+          "id": "lms-csc0000-ethics",
+          "title": "Robotics Ethics Worksheet",
+          "due_at": "2026-09-14T09:00:00+01:00",
+          "estimated_minutes": 120,
+          "priority": "medium",
+          "description": "Short worksheet on dual-use robotics. Submit before Monday lab."
+        }
+      ]
+    },
+    {
+      "code": "ENG0001",
+      "title": "Technical Communication",
+      "assignments": [
+        {
+          "id": "lms-eng0001-essay",
+          "title": "Technical Communication Essay",
+          "due_at": "2026-09-17T23:59:00+01:00",
+          "estimated_minutes": 300,
+          "priority": "medium",
+          "description": "1,500-word analysis of a public incident report. Do not request writing assistance for assessed work."
+        },
+        {
+          "id": "lms-eng0001-reading",
+          "title": "Weekly Reading Response",
+          "due_at": null,
+          "due_text": "Friday of week 3",
+          "date_precision": "ambiguous",
+          "estimated_minutes": 90,
+          "priority": "low",
+          "description": "Post a 300-word response. LMS lists the due date as 'Friday of week 3' with no calendar date."
+        }
+      ]
+    }
+  ]
+}

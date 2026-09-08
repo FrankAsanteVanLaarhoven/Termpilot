@@ -1,0 +1,76 @@
+{
+  "stale": true,
+  "source": "offline_fixture",
+  "items": [
+    {
+      "id": "fb-gov-visa",
+      "title": "Student visa: official GOV.UK guidance",
+      "summary": "Home Office rules for studying in the UK. Always prefer this page over social posts.",
+      "url": "https://www.gov.uk/student-visa",
+      "published": "2026-09-01T00:00:00+00:00",
+      "channel": "government",
+      "source_label": "GOV.UK",
+      "priority": "asap"
+    },
+    {
+      "id": "fb-gov-finance",
+      "title": "Student finance: tuition and maintenance",
+      "summary": "How to apply for Student Finance England support.",
+      "url": "https://www.gov.uk/student-finance",
+      "published": "2026-09-01T00:00:00+00:00",
+      "channel": "government",
+      "source_label": "GOV.UK",
+      "priority": "normal"
+    },
+    {
+      "id": "fb-gov-dfe",
+      "title": "Department for Education newsroom",
+      "summary": "Official education policy updates. Live RSS unavailable in this snapshot.",
+      "url": "https://www.gov.uk/government/organisations/department-for-education",
+      "published": "2026-09-01T00:00:00+00:00",
+      "channel": "government",
+      "source_label": "GOV.UK DfE",
+      "priority": "normal"
+    },
+    {
+      "id": "fb-ukcisa",
+      "title": "UKCISA: advice for international students",
+      "summary": "Independent sector body for international student advice.",
+      "url": "https://www.ukcisa.org.uk/",
+      "published": "2026-09-01T00:00:00+00:00",
+      "channel": "international",
+      "source_label": "UKCISA",
+      "priority": "asap"
+    },
+    {
+      "id": "fb-bbc-edu",
+      "title": "BBC Education news",
+      "summary": "Public education reporting. Live RSS unavailable in this snapshot.",
+      "url": "https://www.bbc.co.uk/news/education",
+      "published": "2026-09-01T00:00:00+00:00",
+      "channel": "school",
+      "source_label": "BBC Education",
+      "priority": "normal"
+    },
+    {
+      "id": "fb-reddit-uniuk",
+      "title": "r/UniUK community",
+      "summary": "Public student discussion. Not official university guidance.",
+      "url": "https://www.reddit.com/r/UniUK/",
+      "published": "2026-09-01T00:00:00+00:00",
+      "channel": "community",
+      "source_label": "Reddit r/UniUK",
+      "priority": "normal"
+    },
+    {
+      "id": "fb-reddit-intl",
+      "title": "r/InternationalStudents community",
+      "summary": "Peer discussion for students studying abroad. Check official sources before acting.",
+      "url": "https://www.reddit.com/r/InternationalStudents/",
+      "published": "2026-09-01T00:00:00+00:00",
+      "channel": "international",
+      "source_label": "Reddit r/InternationalStudents",
+      "priority": "normal"
+    }
+  ]
+}

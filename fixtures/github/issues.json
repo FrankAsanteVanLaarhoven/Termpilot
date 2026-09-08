@@ -1,0 +1,23 @@
+{
+  "login": "a-rivera-demo",
+  "repos": [
+    {
+      "name": "csc0000-lab",
+      "url": "https://github.com/example/csc0000-lab",
+      "issues": [
+        {
+          "id": "gh-1",
+          "title": "Plot encoder drift for week-2 sheet",
+          "state": "open",
+          "note": "Reference only. TermPilot will not complete the assessed lab."
+        },
+        {
+          "id": "gh-2",
+          "title": "Fix README install steps",
+          "state": "open",
+          "note": "Non-assessed housekeeping."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "guild": "Northbridge Robotics Soc (synthetic)",
+  "channels": [
+    {
+      "id": "dc-lab",
+      "name": "#lab-help",
+      "topic": "Office-hours questions. No homework dumps."
+    },
+    {
+      "id": "dc-soc",
+      "name": "#workshops",
+      "topic": "Workshop 9 Sep 18:00"
+    }
+  ]
+}

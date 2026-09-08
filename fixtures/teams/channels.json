@@ -1,0 +1,15 @@
+{
+  "team": "CSC0000 Lab group (synthetic)",
+  "channels": [
+    {
+      "id": "tm-general",
+      "name": "General",
+      "topic": "Class announcements"
+    },
+    {
+      "id": "tm-standup",
+      "name": "Standup",
+      "topic": "Draft standups stay unsent until approved"
+    }
+  ]
+}

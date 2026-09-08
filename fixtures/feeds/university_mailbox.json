@@ -1,0 +1,65 @@
+{
+  "disclaimer": "These notices are treated as messages that arrived at the linked university mailbox. TermPilot does not scrape a university portal and does not speak as the dean, union or a counsellor.",
+  "items": [
+    {
+      "id": "uni-su-welcome",
+      "title": "Students' Union: welcome fair and academic reps",
+      "summary": "Visit the SU advice desk and elect course reps. TermPilot signposts; it is not your union.",
+      "url": "https://www.nus.org.uk/",
+      "from": "union@northbridge.example",
+      "published": "2026-09-03T09:00:00+01:00",
+      "channel": "university",
+      "tags": ["student_union", "community"],
+      "reminder": true,
+      "priority": "normal"
+    },
+    {
+      "id": "uni-careers",
+      "title": "Careers service: autumn internship clinic",
+      "summary": "Book a short CV clinic with the university careers team. No applications are sent for you.",
+      "url": "https://www.prospects.ac.uk/",
+      "from": "careers@northbridge.example",
+      "published": "2026-09-04T10:00:00+01:00",
+      "channel": "university",
+      "tags": ["career"],
+      "reminder": true,
+      "priority": "normal"
+    },
+    {
+      "id": "uni-wellbeing",
+      "title": "Student support: wellbeing drop-in this week",
+      "summary": "Confidential university wellbeing drop-in. TermPilot is not a counselling or crisis service.",
+      "url": "https://www.studentminds.org.uk/",
+      "from": "wellbeing@northbridge.example",
+      "published": "2026-09-04T11:00:00+01:00",
+      "channel": "university",
+      "tags": ["wellbeing", "student_support"],
+      "reminder": true,
+      "priority": "normal"
+    },
+    {
+      "id": "uni-international",
+      "title": "International office: enrolment and CAS checklist",
+      "summary": "Bring passport, visa or BRP, and enrolment letter. Visa rules stay on GOV.UK — not guessed here.",
+      "url": "https://www.gov.uk/student-visa",
+      "from": "international@northbridge.example",
+      "published": "2026-09-02T08:30:00+01:00",
+      "channel": "university",
+      "tags": ["international"],
+      "reminder": true,
+      "priority": "asap"
+    },
+    {
+      "id": "uni-ops",
+      "title": "Faculty office: library 24-hour opening starts Monday",
+      "summary": "Operational notice from the faculty office. This is not a message impersonating a dean.",
+      "url": null,
+      "from": "faculty-office@northbridge.example",
+      "published": "2026-09-05T07:00:00+01:00",
+      "channel": "university",
+      "tags": ["school"],
+      "reminder": false,
+      "priority": "normal"
+    }
+  ]
+}
