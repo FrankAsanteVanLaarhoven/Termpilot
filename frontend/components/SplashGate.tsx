@@ -356,6 +356,7 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
             <p className="tp-splash-hint">{tr("splash.members")}</p>
             <form
               className="tp-login"
+              autoComplete="off"
               onSubmit={(event) => {
                 event.preventDefault();
                 signIn();
@@ -365,7 +366,13 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
                 University email
                 <input
                   type="email"
-                  autoComplete="username"
+                  name="tp-campus-email"
+                  autoComplete="off"
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  data-1p-ignore="true"
+                  data-lpignore="true"
                   placeholder="you@your-university.edu"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -375,7 +382,10 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
                 Password
                 <input
                   type="password"
-                  autoComplete="current-password"
+                  name="tp-campus-secret"
+                  autoComplete="new-password"
+                  data-1p-ignore="true"
+                  data-lpignore="true"
                   placeholder="at least 8 characters"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
