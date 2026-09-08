@@ -29,6 +29,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
         <link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png" />
         <link rel="icon" type="image/png" sizes="512x512" href="/icons/icon-512.png" />
+        <link rel="preload" href="/splash/grokbot-humanoid.png" as="image" />
+        <link rel="preload" href="/robot/g1/g1.urdf" as="fetch" crossOrigin="anonymous" />
         <meta name="theme-color" content="#05070a" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-title" content="TermPilot" />

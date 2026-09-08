@@ -775,6 +775,11 @@ button.tp-logo:focus-visible .tp-logo-word {
   height: 100%;
   display: block;
   background: transparent;
+  opacity: 0;
+}
+.tp-bot[data-spline="ready"] .tp-bot-spline {
+  opacity: 1;
+  transition: opacity 0.28s ease;
 }
 .tp-bot-reference {
   position: absolute;
@@ -793,7 +798,7 @@ button.tp-logo:focus-visible .tp-logo-word {
   inset: 0;
   display: grid;
   place-items: center;
-  z-index: 1;
+  z-index: 3;
 }
 
 .tp-bot-badge {

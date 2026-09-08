@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { GrokBotMark, type BotMood } from "@/components/GrokBotMark";
+import { type BotMood } from "@/components/GrokBotMark";
 import { useI18n } from "@/components/Providers";
 import { G1Humanoid, G1_URDF, type G1Expression } from "@/lib/g1/G1Humanoid";
 
@@ -29,7 +29,17 @@ export function GrokHumanoid({
       className={className}
       urdfUrl={URDF_HUMANOID}
       ariaLabel={`${tr("grokbot.name")} interactive humanoid`}
-      loading={<GrokBotMark size={72} mood={mood} />}
+      loading={
+        <Image
+          className="tp-bot-reference"
+          src="/splash/grokbot-humanoid.png"
+          alt=""
+          fill
+          priority
+          sizes="(max-width: 900px) 100vw, 60vw"
+          aria-hidden
+        />
+      }
       fallback={
         <Image
           className="tp-bot-reference"
