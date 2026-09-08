@@ -4,7 +4,20 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 
 export type G1Mood = "idle" | "listening" | "processing" | "speaking";
 export type G1Expression = "idle" | "welcome" | "curious" | "listen" | "think" | "glad" | "careful";
-export type G1Cue = "idle" | "hello" | "wave" | "point" | "listen" | "think" | "yes" | "no" | "invite";
+export type G1Cue =
+  | "idle"
+  | "hello"
+  | "wave"
+  | "point"
+  | "listen"
+  | "think"
+  | "yes"
+  | "no"
+  | "invite"
+  | "good"
+  | "sad"
+  | "oops"
+  | "happy";
 export const G1_URDF = "/robot/g1/g1.urdf";
 
 type Pointer = { x: number; y: number; overSignin: boolean };
@@ -403,17 +416,30 @@ export function G1Humanoid({
         let yesMix = 0;
         let noMix = 0;
         let inviteMix = 0;
+        let goodMix = 0;
+        let sadMix = 0;
+        let oopsMix = 0;
+        let happyMix = 0;
         const animate = () => {
           if (disposed) return;
           const t = clock.getElapsedTime();
           const p = pointerRef.current;
           const cue = cueRef.current;
-          const active = moodRef.current === "speaking" || expressionRef.current === "glad" || cue === "hello";
+          const active = moodRef.current === "speaking" || expressionRef.current === "glad" || cue === "hello" || cue === "happy" || cue === "good";
           const listening = moodRef.current === "listening" || expressionRef.current === "listen" || cue === "listen";
           const thinking = moodRef.current === "processing" || expressionRef.current === "think" || cue === "think";
           const breath = Math.sin(t * 1.55) * 0.025;
           const gesture = active ? Math.sin(t * 3.1) * 0.23 : listening ? 0.16 : Math.sin(t * 0.72) * 0.035;
-          const busy = cue === "listen" || cue === "think" || cue === "point" || cue === "no" || p.overSignin;
+          const busy =
+            cue === "listen" ||
+            cue === "think" ||
+            cue === "point" ||
+            cue === "no" ||
+            cue === "good" ||
+            cue === "sad" ||
+            cue === "oops" ||
+            cue === "happy" ||
+            p.overSignin;
           const spinTarget = fullBody && turningRef.current ? Math.PI : 0;
           pivot.rotation.y += (spinTarget - pivot.rotation.y) * 0.09;
           const facing = 1 - Math.min(Math.abs(pivot.rotation.y) / Math.PI, 1);
@@ -429,14 +455,21 @@ export function G1Humanoid({
           yesMix += ((cue === "yes" ? 1 : 0) - yesMix) * 0.16;
           noMix += ((cue === "no" ? 1 : 0) - noMix) * 0.2;
           inviteMix += ((cue === "invite" ? 1 : 0) - inviteMix) * 0.12;
+          goodMix += ((cue === "good" ? 1 : 0) - goodMix) * 0.18;
+          sadMix += ((cue === "sad" ? 1 : 0) - sadMix) * 0.14;
+          oopsMix += ((cue === "oops" ? 1 : 0) - oopsMix) * 0.2;
+          happyMix += ((cue === "happy" ? 1 : 0) - happyMix) * 0.16;
           const g = greetMix;
           const pt = pointMix;
-          const idle = Math.max(0, 1 - g - pt - listenMix - thinkMix - inviteMix);
+          const idle = Math.max(
+            0,
+            1 - g - pt - listenMix - thinkMix - inviteMix - goodMix - sadMix - oopsMix - happyMix,
+          );
           const wave = Math.sin(t * 10) * 0.5 + 0.5;
-          const hipSway = Math.sin(t * 1.1) * 0.045;
+          const hipSway = Math.sin(t * 1.1) * 0.045 * (1 - 0.7 * sadMix);
           const turn = THREE.MathUtils.clamp(p.x * (fullBody ? 0.28 : 0.08) + pt * 0.32, -0.45, 0.5);
 
-          setJoint("waist_yaw_joint", turn + Math.sin(t * 0.7) * 0.04 * idle);
+          setJoint("waist_yaw_joint", turn + Math.sin(t * 0.7) * 0.04 * idle + 0.12 * oopsMix);
 
           setJoint(
             "left_shoulder_pitch_joint",
@@ -445,33 +478,80 @@ export function G1Humanoid({
               -0.2 * g +
               -0.7 * listenMix +
               -0.85 * thinkMix +
-              -0.25 * inviteMix,
+              -0.25 * inviteMix +
+              -1.55 * happyMix +
+              -1.62 * oopsMix +
+              0.28 * sadMix,
           );
           setJoint(
             "right_shoulder_pitch_joint",
-            (-0.12 - breath + gesture - p.y * 0.08) * idle - 0.62 * g - 0.15 * pt - 0.25 * inviteMix - 0.2 * yesMix,
+            (-0.12 - breath + gesture - p.y * 0.08) * idle -
+              0.62 * g -
+              0.15 * pt -
+              0.25 * inviteMix -
+              0.2 * yesMix -
+              0.4 * goodMix -
+              1.5 * happyMix -
+              0.9 * oopsMix +
+              0.28 * sadMix,
           );
           setJoint(
             "left_shoulder_roll_joint",
-            (0.14 + p.x * 0.1) * idle + 1.15 * pt + 0.2 * g + 0.7 * listenMix + 0.85 * thinkMix + 0.55 * inviteMix,
+            (0.14 + p.x * 0.1) * idle +
+              1.15 * pt +
+              0.2 * g +
+              0.7 * listenMix +
+              0.85 * thinkMix +
+              0.55 * inviteMix +
+              1.15 * happyMix +
+              0.62 * oopsMix -
+              0.12 * sadMix,
           );
           setJoint(
             "right_shoulder_roll_joint",
-            (-0.14 + p.x * 0.08) * idle - 0.42 * g - 0.2 * pt - 0.55 * inviteMix - 0.4 * yesMix,
+            (-0.14 + p.x * 0.08) * idle -
+              0.42 * g -
+              0.2 * pt -
+              0.55 * inviteMix -
+              0.4 * yesMix -
+              1.2 * goodMix -
+              1.15 * happyMix -
+              0.22 * oopsMix +
+              0.12 * sadMix,
           );
-          setJoint("left_shoulder_yaw_joint", p.x * -0.12 * idle + 0.55 * pt + 0.35 * listenMix + 0.4 * thinkMix);
-          setJoint("right_shoulder_yaw_joint", p.x * -0.12 * idle + 0.25 * g);
-          setJoint("left_elbow_joint", (0.3 + Math.abs(gesture) * 0.42) * idle + 0.2 * pt + 0.35 * g + 1.1 * listenMix + 1.2 * thinkMix);
+          setJoint(
+            "left_shoulder_yaw_joint",
+            p.x * -0.12 * idle + 0.55 * pt + 0.35 * listenMix + 0.4 * thinkMix - 0.25 * oopsMix,
+          );
+          setJoint("right_shoulder_yaw_joint", p.x * -0.12 * idle + 0.25 * g + 0.45 * goodMix + 0.55 * oopsMix);
+          setJoint(
+            "left_elbow_joint",
+            (0.3 + Math.abs(gesture) * 0.42) * idle +
+              0.2 * pt +
+              0.35 * g +
+              1.1 * listenMix +
+              1.2 * thinkMix +
+              0.35 * happyMix +
+              1.35 * oopsMix +
+              0.15 * sadMix,
+          );
           setJoint(
             "right_elbow_joint",
-            (0.3 + (active ? 0.48 : 0.15)) * idle + (1.15 + wave * 0.55) * g + 0.35 * pt + 0.4 * inviteMix,
+            (0.3 + (active ? 0.48 : 0.15)) * idle +
+              (1.15 + wave * 0.55) * g +
+              0.35 * pt +
+              0.4 * inviteMix +
+              1.55 * goodMix +
+              0.35 * happyMix +
+              1.6 * oopsMix +
+              0.15 * sadMix,
           );
-          setJoint("left_wrist_roll_joint", Math.sin(t * 1.15) * 0.11 * idle + 0.2 * pt);
-          setJoint("right_wrist_roll_joint", 0);
-          setJoint("left_wrist_pitch_joint", p.y * -0.12 * idle + 0.25 * pt);
-          setJoint("right_wrist_pitch_joint", 0);
+          setJoint("left_wrist_roll_joint", Math.sin(t * 1.15) * 0.11 * idle + 0.2 * pt + 0.35 * oopsMix);
+          setJoint("right_wrist_roll_joint", 0.85 * goodMix + 0.4 * oopsMix);
+          setJoint("left_wrist_pitch_joint", p.y * -0.12 * idle + 0.25 * pt - 0.35 * oopsMix);
+          setJoint("right_wrist_pitch_joint", 0.25 * goodMix + 0.45 * oopsMix);
           setJoint("left_wrist_yaw_joint", p.x * 0.12 * idle + 0.5 * pt);
-          setJoint("right_wrist_yaw_joint", 0);
+          setJoint("right_wrist_yaw_joint", 1.15 * goodMix);
 
           setJoint("left_hip_pitch_joint", -0.06 + hipSway + breath * 0.15);
           setJoint("right_hip_pitch_joint", -0.06 - hipSway - breath * 0.15);
@@ -490,7 +570,7 @@ export function G1Humanoid({
           // around X, which previously swung the helmet off the neck.
           if (gaze) {
             const yaw = THREE.MathUtils.clamp(
-              p.x * 0.4 + Math.sin(t * 11) * 0.38 * noMix,
+              p.x * 0.4 + Math.sin(t * 11) * 0.38 * noMix + 0.22 * oopsMix,
               -0.55,
               0.55,
             );
@@ -498,14 +578,18 @@ export function G1Humanoid({
               p.y * 0.26 +
                 (thinking ? Math.sin(t * 1.8) * 0.03 : 0) +
                 Math.sin(t * 8.5) * 0.24 * yesMix +
-                0.18 * listenMix,
+                0.18 * listenMix +
+                0.28 * sadMix +
+                0.2 * oopsMix -
+                0.16 * happyMix -
+                0.08 * goodMix,
               -0.32,
               0.34,
             );
             gaze.rotation.set(0, pitch, yaw);
           }
           eyes.forEach((eye) => {
-            const blink = Math.sin(t * 0.68) > 0.982 ? 0.12 : 1;
+            const blink = oopsMix > 0.45 ? 0.18 : Math.sin(t * 0.68) > 0.982 ? 0.12 : 1;
             eye.root.scale.y = blink;
             eye.pupil.position.y = THREE.MathUtils.clamp(p.x * 0.005, -0.005, 0.005);
             eye.pupil.position.z = THREE.MathUtils.clamp(-p.y * 0.0045, -0.0045, 0.0045);

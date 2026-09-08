@@ -45,7 +45,7 @@ import { AccountMenu, HelpView, WidgetEditor } from "@/components/AccountMenu";
 import { MailboxDesk } from "@/components/MailboxDesk";
 import { CookieBanner } from "@/components/CookieBanner";
 import { ModelDock } from "@/components/ModelDock";
-import { GrokHumanoid, type BotMood } from "@/components/GrokHumanoid";
+import { GrokHumanoid, type BotMood, type GrokCue } from "@/components/GrokHumanoid";
 import { MemberShield } from "@/components/MemberShield";
 import { SplashGate, writeGrokSession } from "@/components/SplashGate";
 import { NavGlyph } from "@/components/NavGlyph";
@@ -107,6 +107,31 @@ export default function Page() {
   const [me, setMe] = useState<{ display_name: string; user_id: string; email?: string } | null>(null);
   const [gate, setGate] = useState<"boot" | "splash" | "app">("boot");
   const [botMood, setBotMood] = useState<BotMood>("idle");
+  const [botCue, setBotCue] = useState<GrokCue>("hello");
+  const cueTimer = useRef<number | null>(null);
+  const reactingUntil = useRef(0);
+
+  function reactBot(cue: GrokCue, hold = 2400) {
+    reactingUntil.current = Date.now() + hold;
+    setBotCue(cue);
+    if (cue === "happy" || cue === "good" || cue === "hello") setBotMood("speaking");
+    else if (cue === "think") setBotMood("processing");
+    else if (cue === "listen") setBotMood("listening");
+    else setBotMood("idle");
+    if (cueTimer.current) window.clearTimeout(cueTimer.current);
+    cueTimer.current = window.setTimeout(() => {
+      setBotCue("idle");
+      setBotMood("idle");
+    }, hold);
+  }
+
+  function reactToError(message: string) {
+    if (/guardian|integrity|homework|assessed|impersonat|not allowed|misconduct/i.test(message)) {
+      reactBot("oops", 2800);
+    } else {
+      reactBot("sad", 2600);
+    }
+  }
   const [botMode, setBotMode] = useState("work");
   const [modelId, setModelId] = useState("grok-4.6");
   const [tool, setTool] = useState("search");
@@ -201,6 +226,7 @@ export default function Page() {
         return;
       }
       setError(err instanceof Error ? err.message : "load_failed");
+      setBotCue("sad");
     }
   }, []);
 
@@ -250,10 +276,15 @@ export default function Page() {
       await load();
       if (result.unresolved_uncertainties.includes("deadline_conflict_requires_human")) {
         setView("conflicts");
+        reactBot("oops", 2800);
+      } else {
+        reactBot("good", 2200);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "command_failed");
+      const message = err instanceof Error ? err.message : "command_failed";
+      setError(message);
       setStatus("failed");
+      reactToError(message);
     } finally {
       setBusy(false);
     }
@@ -263,13 +294,13 @@ export default function Page() {
     const cleaned = text.trim();
     if (!cleaned || paused || chatBusy) return;
     setChatBusy(true);
-    setBotMood("processing");
+    reactBot("think", 12000);
     setError(null);
     try {
       const result = await api.grokTurn(cleaned);
       setChatTurns((prev) => [...prev, { you: cleaned, bot: result.display_text, intent: result.intent }]);
       setChatInput("");
-      setBotMood("speaking");
+      reactBot("happy", 2400);
       const panel = result.facts?.open_view;
       const allowed: ViewId[] = [
         "chat",
@@ -293,10 +324,10 @@ export default function Page() {
         setView(panel as ViewId);
       }
       await load();
-      window.setTimeout(() => setBotMood("idle"), 1600);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "grokbot_failed");
-      setBotMood("idle");
+      const message = err instanceof Error ? err.message : "grokbot_failed";
+      setError(message);
+      reactToError(message);
     } finally {
       setChatBusy(false);
     }
@@ -332,6 +363,7 @@ export default function Page() {
         onEnter={() => {
           writeGrokSession(true);
           setGate("app");
+          reactBot("hello", 3200);
         }}
       />
     );
@@ -514,17 +546,17 @@ export default function Page() {
                   variant="stage"
                   mood={botMood}
                   speaking={botMood === "speaking"}
-                  cue={
-                    botMood === "speaking"
-                      ? "hello"
-                      : botMood === "listening"
-                        ? "listen"
-                        : botMood === "processing"
-                          ? "think"
-                          : "idle"
-                  }
+                  cue={botCue}
                   expression={
-                    botMood === "speaking" ? "glad" : botMood === "listening" ? "listen" : botMood === "processing" ? "think" : "idle"
+                    botCue === "happy" || botCue === "good"
+                      ? "glad"
+                      : botCue === "listen"
+                        ? "listen"
+                        : botCue === "think"
+                          ? "think"
+                          : botCue === "sad" || botCue === "oops"
+                            ? "careful"
+                            : "idle"
                   }
                 />
               </div>
@@ -818,7 +850,14 @@ export default function Page() {
           onModelId={setModelId}
           tool={tool}
           onTool={setTool}
-          onMood={setBotMood}
+          onMood={(mood) => {
+            setBotMood(mood);
+            if (Date.now() < reactingUntil.current) return;
+            if (mood === "listening") setBotCue("listen");
+            else if (mood === "processing") setBotCue("think");
+            else if (mood === "speaking") setBotCue("good");
+            else setBotCue("idle");
+          }}
           onHandoff={load}
           onOpenView={(panel) => {
             const allowed: ViewId[] = [

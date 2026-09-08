@@ -48,17 +48,7 @@ export function GrokHumanoid({
       micActive={micActive}
       onMic={onMic}
       ariaLabel={`${tr("grokbot.name")} interactive humanoid`}
-      loading={
-        <Image
-          className="tp-bot-reference"
-          src="/splash/grokbot-humanoid.png"
-          alt=""
-          fill
-          priority
-          sizes="(max-width: 900px) 100vw, 60vw"
-          aria-hidden
-        />
-      }
+      loading={null}
       fallback={
         <Image
           className="tp-bot-reference"
