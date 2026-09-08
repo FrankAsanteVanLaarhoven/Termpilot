@@ -518,7 +518,7 @@ button.tp-logo:focus-visible .tp-logo-word {
 .tp-splash-stage {
   position: absolute;
   z-index: 3;
-  inset: 8% 38% 0 0;
+  inset: 0 36% 0 0;
   pointer-events: auto;
 }
 
@@ -1035,7 +1035,7 @@ button.tp-logo:focus-visible .tp-logo-word {
 
 @media (max-width: 900px) {
   .tp-splash-stage {
-    inset: 12% 0 46%;
+    inset: 2% 0 40%;
   }
   .tp-splash-card {
     top: auto;

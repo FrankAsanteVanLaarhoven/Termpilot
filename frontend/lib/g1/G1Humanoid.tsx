@@ -86,11 +86,13 @@ export function G1Humanoid({
         renderer.shadowMap.type = THREE.PCFShadowMap;
 
         const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(28, 1, 0.01, 40);
-        // URDF +X is face-forward. Camera sits on +X for a straight-on portrait
-        // aimed at the head, with only a light parallax so gaze stays readable.
-        camera.position.set(2.55, 0.98, 0.06);
-        camera.lookAt(0, 0.9, 0);
+        const fullBody = variant === "splash";
+        const camera = new THREE.PerspectiveCamera(fullBody ? 34 : 28, 1, 0.01, 40);
+        // URDF +X is face-forward. Splash pulls back for a full-height frame;
+        // in-app stage stays a head-and-chest portrait.
+        const lookY = fullBody ? 0.16 : 0.9;
+        camera.position.set(fullBody ? 4.85 : 2.55, fullBody ? 0.2 : 0.98, fullBody ? 0.04 : 0.06);
+        camera.lookAt(0, lookY, 0);
         scene.add(camera);
         scene.add(new THREE.HemisphereLight(0xd7f7ff, 0x05070c, 1.7));
         const key = new THREE.DirectionalLight(0xffffff, 5.4);
@@ -316,9 +318,10 @@ export function G1Humanoid({
             eye.pupil.position.z = THREE.MathUtils.clamp(-p.y * 0.0045, -0.0045, 0.0045);
           });
           robot.position.y = homeRobotY + Math.sin(t * 1.55) * 0.006;
-          camera.position.x += (homeCamera.x - Math.abs(p.x) * 0.03 - camera.position.x) * 0.05;
-          camera.position.y += (homeCamera.y - p.y * 0.04 - camera.position.y) * 0.05;
-          camera.position.z += (homeCamera.z - p.x * 0.08 - camera.position.z) * 0.05;
+          const sway = fullBody ? 0.012 : 0.03;
+          camera.position.x += (homeCamera.x - Math.abs(p.x) * sway - camera.position.x) * 0.05;
+          camera.position.y += (homeCamera.y - p.y * (fullBody ? 0.02 : 0.04) - camera.position.y) * 0.05;
+          camera.position.z += (homeCamera.z - p.x * (fullBody ? 0.04 : 0.08) - camera.position.z) * 0.05;
           key.position.z = 1.35 - p.x * 0.3;
           key.position.y = 2.6 - p.y * 0.16;
           rim.intensity = 24 + Math.sin(t * 1.2) * 2.4 + (active ? 6 : 0);
@@ -328,7 +331,7 @@ export function G1Humanoid({
           fill.position.z = -1.7 - p.x * 0.18;
           spot.position.set(2.35, 1.72 - p.y * 0.5, -p.x * 0.9);
           spot.target.position.set(0.08, 0.92 - p.y * 0.18, -p.x * 0.32);
-          camera.lookAt(0, 0.9, 0);
+          camera.lookAt(0, lookY, 0);
           renderer.render(scene, camera);
         };
         setModelState("ready");
@@ -357,7 +360,7 @@ export function G1Humanoid({
     }
     void mount();
     return () => { disposed = true; cancelAnimationFrame(frame); cleanup(); };
-  }, [urdfUrl, allowXr]);
+  }, [urdfUrl, allowXr, variant]);
 
   async function enterXr(mode: XrMode) {
     const xr = navigator.xr;
