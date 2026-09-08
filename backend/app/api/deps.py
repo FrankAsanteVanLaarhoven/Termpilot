@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 
-from fastapi import Depends, Header, Request
+from fastapi import Depends, Header, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.models import UserProfile
@@ -37,13 +37,10 @@ async def current_user_id(
     if settings.strict_auth:
         if cookie_user:
             return cookie_user
-        uid = settings.demo_user_id
-        user = await session.get(UserProfile, uid)
-        if user is None:
-            from app.services.demo import seed_user
-
-            await seed_user(session, user_id=uid)
-        return uid
+        raise HTTPException(
+            status_code=401,
+            detail="Sign in with your campus account to use TermPilot.",
+        )
     if x_user_id:
         uid = x_user_id
     elif cookie_user:

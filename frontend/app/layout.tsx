@@ -7,6 +7,8 @@ export const metadata: Metadata = {
   description: "No important deadline should become a surprise. Grok Bot runs every TermPilot student tool.",
   manifest: "/manifest.json",
   appleWebApp: { capable: true, title: "TermPilot" },
+  robots: { index: false, follow: false, nocache: true, noarchive: true, nosnippet: true },
+  referrer: "no-referrer",
 };
 
 export const viewport: Viewport = {

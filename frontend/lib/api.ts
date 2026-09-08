@@ -36,6 +36,14 @@ export function writeStudentSession(session: StudentSession | null): void {
   }
 }
 
+export class AuthRequiredError extends Error {
+  status = 401;
+  constructor(message = "Sign in with your campus account to use TermPilot.") {
+    super(message);
+    this.name = "AuthRequiredError";
+  }
+}
+
 function extraHeaders(): Record<string, string> {
   const headers: Record<string, string> = {};
   try {
@@ -70,6 +78,9 @@ async function req<T>(path: string, init?: RequestInit): Promise<T> {
       if (typeof parsed.detail === "string") message = parsed.detail;
     } catch {
       /* plain-text error */
+    }
+    if (response.status === 401) {
+      throw new AuthRequiredError(message);
     }
     if (/FUNCTION_INVOCATION_FAILED/i.test(message)) {
       message =

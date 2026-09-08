@@ -5,7 +5,9 @@ import {
   DEMO_COMMAND,
   HOME_VIEW,
   api,
+  AuthRequiredError,
   readLastView,
+  readStudentSession,
   writeLastView,
   type AgentRun,
   type Approval,
@@ -44,6 +46,7 @@ import { MailboxDesk } from "@/components/MailboxDesk";
 import { CookieBanner } from "@/components/CookieBanner";
 import { ModelDock } from "@/components/ModelDock";
 import { GrokHumanoid, type BotMood } from "@/components/GrokHumanoid";
+import { MemberShield } from "@/components/MemberShield";
 import { SplashGate, readGrokSession, writeGrokSession } from "@/components/SplashGate";
 import { NavGlyph } from "@/components/NavGlyph";
 
@@ -174,12 +177,17 @@ export default function Page() {
       setInvites(collab.items);
       setError(null);
     } catch (err) {
+      if (err instanceof AuthRequiredError) {
+        writeGrokSession(false);
+        setGate("splash");
+        return;
+      }
       setError(err instanceof Error ? err.message : "load_failed");
     }
   }, []);
 
   useEffect(() => {
-    setGate(readGrokSession() ? "app" : "splash");
+    setGate(readGrokSession() && readStudentSession() ? "app" : "splash");
     setView(readLastView());
     setHydrated(true);
   }, []);
@@ -312,6 +320,7 @@ export default function Page() {
   }
 
   return (
+    <MemberShield>
     <div className="flex min-h-screen bg-navy text-ink">
       <div
         className="relative z-20"
@@ -811,6 +820,7 @@ export default function Page() {
       </div>
       <CookieBanner />
     </div>
+    </MemberShield>
   );
 }
 

@@ -119,3 +119,46 @@ async def test_production_login_requires_email_mfa(
     finally:
         monkeypatch.setenv("TERMPILOT_ENV", "test")
         reset_settings_cache()
+
+
+async def test_production_rejects_anonymous_and_spoofed_user(
+    client: AsyncClient, monkeypatch
+) -> None:
+    monkeypatch.setenv("TERMPILOT_ENV", "production")
+    reset_settings_cache()
+    try:
+        health = await client.get("/health")
+        assert health.status_code == 200
+        assert health.headers.get("x-frame-options") == "DENY"
+        anon = await client.get("/tower")
+        assert anon.status_code == 401
+        assert "campus" in anon.json()["detail"].lower()
+        spoof = await client.get("/tower", headers={"X-User-Id": "FAVL"})
+        assert spoof.status_code == 401
+        me = await client.get("/me")
+        assert me.status_code == 401
+    finally:
+        monkeypatch.setenv("TERMPILOT_ENV", "test")
+        reset_settings_cache()
+
+
+async def test_production_session_cookie_opens_tower(
+    client: AsyncClient, monkeypatch
+) -> None:
+    email = "member@ox.ac.uk"
+    await client.post("/auth/register", json={"email": email, "password": "campus-lab-1"})
+    verified = await client.post(
+        "/auth/verify-email", json={"email": email, "code": LAST_OTP[f"email:{email}"]}
+    )
+    assert verified.status_code == 200
+    monkeypatch.setenv("TERMPILOT_ENV", "production")
+    reset_settings_cache()
+    try:
+        tower = await client.get("/tower")
+        assert tower.status_code == 200
+        me = await client.get("/me", headers={"X-User-Id": "FAVL"})
+        assert me.status_code == 200
+        assert me.json()["email"] == email
+    finally:
+        monkeypatch.setenv("TERMPILOT_ENV", "test")
+        reset_settings_cache()

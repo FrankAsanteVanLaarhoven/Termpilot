@@ -1,8 +1,37 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { readGrokSession } from "@/components/SplashGate";
+import { readStudentSession } from "@/lib/api";
 
 export default function SdkPage() {
+  const [allowed, setAllowed] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    setAllowed(Boolean(readGrokSession() && readStudentSession()));
+  }, []);
+
+  if (allowed === null) {
+    return <div className="min-h-screen bg-navy" aria-hidden />;
+  }
+
+  if (!allowed) {
+    return (
+      <div className="min-h-screen bg-navy px-4 py-10 text-ink">
+        <div className="mx-auto max-w-xl">
+          <h1 className="text-2xl font-semibold">Members only</h1>
+          <p className="mt-3 text-sm text-mute">
+            Sign in with a campus account to use TermPilot, including the SDK downloads.
+          </p>
+          <Link className="mt-6 inline-block text-sm text-cyan underline" href="/">
+            Create an account or sign in
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-navy px-4 py-10 text-ink">
       <div className="mx-auto max-w-xl">

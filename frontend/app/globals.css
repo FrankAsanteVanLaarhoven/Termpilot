@@ -914,6 +914,46 @@ button.tp-logo:focus-visible .tp-logo-word {
   }
 }
 
+.tp-member-shell {
+  position: relative;
+  min-height: 100vh;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+.tp-member-shell input,
+.tp-member-shell textarea,
+.tp-member-shell select,
+.tp-member-shell [contenteditable="true"] {
+  user-select: text;
+  -webkit-user-select: text;
+}
+.tp-member-mark {
+  pointer-events: none;
+  position: fixed;
+  inset: -18%;
+  z-index: 9990;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(180px, 1fr));
+  gap: 72px 40px;
+  transform: rotate(-22deg);
+  opacity: 0.085;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  color: var(--tp-cyan);
+  mix-blend-mode: overlay;
+  white-space: nowrap;
+}
+.tp-member-shell.is-hidden {
+  filter: blur(22px);
+}
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+}
+
 @media (max-width: 900px) {
   .tp-splash-stage {
     inset: 12% 0 46%;

@@ -342,6 +342,7 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
               <span>{tr("splash.engine")}</span>
             </h1>
             <p className="tp-splash-tag">{tr("splash.tagline")}</p>
+            <p className="tp-splash-hint">{tr("splash.members")}</p>
             <p className="tp-splash-hint">{tr("splash.publicDemo")}</p>
             <form
               className="tp-login"
@@ -428,7 +429,7 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
                   setError(null);
                 }}
               >
-                Use the public demo account
+                Use the member demo account
               </button>
               <p className="tp-splash-hint">
                 Public demo: {DEMO_EMAIL} · password {DEMO_PASSWORD}
