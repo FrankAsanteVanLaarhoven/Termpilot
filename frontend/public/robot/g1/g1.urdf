@@ -406,7 +406,7 @@
 
   <!-- FAVL neon chest mark. Replaces the Unitree nameplate so this asset reads as ours. -->
   <joint name="logo_joint" type="fixed">
-    <origin xyz="0.0039635 0 -0.044" rpy="0 0 0"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
     <parent link="torso_link"/>
     <child link="logo_link"/>
   </joint>
@@ -415,6 +415,12 @@
       <mass value="0.001"/>
       <inertia ixx="1e-7" ixy="0" ixz="0" iyy="1e-7" iyz="0" izz="1e-7"/>
     </inertial>
+    <visual>
+      <geometry>
+        <mesh filename="assets/visuals/logo_plate.STL"/>
+      </geometry>
+      <material name="dark_metal"/>
+    </visual>
     <visual>
       <geometry>
         <mesh filename="assets/visuals/logo_link.STL"/>

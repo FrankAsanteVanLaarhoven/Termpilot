@@ -8,20 +8,24 @@ import struct
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-OUT = ROOT / "frontend" / "public" / "robot" / "g1" / "assets" / "visuals" / "logo_link.STL"
+VISUALS = ROOT / "frontend" / "public" / "robot" / "g1" / "assets" / "visuals"
+OUT = VISUALS / "logo_link.STL"
+PLATE = VISUALS / "logo_plate.STL"
 COLLISION = (
     ROOT / "frontend" / "public" / "robot" / "g1" / "assets" / "collisions" / "logo_link_collision.STL"
 )
 
-# Sit on the original Unitree plate: front +X, letters along Y, height in Z.
-X_FRONT = 0.0812
-Z0 = 0.2578
-LETTER_W = 0.022
-LETTER_H = 0.028
-GAP = 0.0076
-RADIUS = 0.00255
+# Embed in the torso nameplate band (torso front at z~0.27 is x≈0.062, not the belly).
+CHEST_X = 0.0618
+PLATE_BACK = 0.0572
+PLATE_FRONT = 0.0624
+Z0 = 0.248
+LETTER_W = 0.0185
+LETTER_H = 0.024
+GAP = 0.0054
+RADIUS = 0.00215
 RADIAL = 14
-HEADER = b"FAVL neon chest mark - TermPilot / Frank Van Laarhoven"
+HEADER = b"FAVL inlaid chest mark - TermPilot / Frank Van Laarhoven"
 
 
 def _sub(a: tuple[float, float, float], b: tuple[float, float, float]) -> tuple[float, float, float]:
@@ -59,7 +63,7 @@ def letter_to_world(index: int, u: float, v: float) -> tuple[float, float, float
     # Camera looks down -X; screen-left is -Y, so F (index 0) must sit on -Y.
     y = -(y_left - u * LETTER_W)
     z = Z0 + v * LETTER_H
-    return (X_FRONT, y, z)
+    return (CHEST_X, y, z)
 
 
 def sample_polyline(points: list[tuple[float, float, float]], spacing: float = 0.0009) -> list[tuple[float, float, float]]:
@@ -173,7 +177,25 @@ GLYPHS: list[list[list[tuple[float, float]]]] = [
 ]
 
 
-def build_mark() -> list[tuple]:
+def build_plate() -> list[tuple]:
+    """Sunken chest plaque the letters sit in, so FAVL reads as inlaid armor."""
+    tris: list = []
+    total = 4 * LETTER_W + 3 * GAP
+    pad_y, pad_z = 0.008, 0.007
+    y0, y1 = -total / 2 - pad_y, total / 2 + pad_y
+    z0, z1 = Z0 - pad_z, Z0 + LETTER_H + pad_z
+    # Main inlay slab, slightly behind the letter tubes.
+    add_box(tris, (PLATE_BACK, y0, z0), (PLATE_FRONT, y1, z1))
+    rim = 0.0024
+    # Raised bezel around the recess so the mark is set into the chest.
+    add_box(tris, (PLATE_FRONT - 0.0004, y0 - rim, z0 - rim), (PLATE_FRONT + 0.0016, y1 + rim, z0 + 0.0018))
+    add_box(tris, (PLATE_FRONT - 0.0004, y0 - rim, z1 - 0.0018), (PLATE_FRONT + 0.0016, y1 + rim, z1 + rim))
+    add_box(tris, (PLATE_FRONT - 0.0004, y0 - rim, z0), (PLATE_FRONT + 0.0016, y0 + 0.0018, z1))
+    add_box(tris, (PLATE_FRONT - 0.0004, y1 - 0.0018, z0), (PLATE_FRONT + 0.0016, y1 + rim, z1))
+    return tris
+
+
+def build_letters() -> list[tuple]:
     tris: list = []
     for index, strokes in enumerate(GLYPHS):
         for stroke in strokes:
@@ -197,21 +219,23 @@ def write_stl(path: Path, tris: list, header: bytes = HEADER) -> None:
 
 
 def main() -> None:
-    tris = build_mark()
-    write_stl(OUT, tris)
+    letters = build_letters()
+    plate = build_plate()
+    write_stl(OUT, letters)
+    write_stl(PLATE, plate, b"FAVL chest plaque")
     total = 4 * LETTER_W + 3 * GAP
     collision: list = []
     add_box(
         collision,
-        (X_FRONT - RADIUS * 2, -total / 2 - RADIUS, Z0 - RADIUS),
-        (X_FRONT + RADIUS * 2, total / 2 + RADIUS, Z0 + LETTER_H + RADIUS),
+        (PLATE_BACK, -total / 2 - 0.01, Z0 - 0.008),
+        (PLATE_FRONT + RADIUS, total / 2 + 0.01, Z0 + LETTER_H + 0.008),
     )
     write_stl(COLLISION, collision, b"FAVL logo collision")
-    xs = [p[0] for tri in tris for p in tri]
-    ys = [p[1] for tri in tris for p in tri]
-    zs = [p[2] for tri in tris for p in tri]
+    xs = [p[0] for tri in letters for p in tri]
+    ys = [p[1] for tri in letters for p in tri]
+    zs = [p[2] for tri in letters for p in tri]
     print(
-        f"wrote {OUT} tris={len(tris)} "
+        f"wrote {OUT} tris={len(letters)} plate={len(plate)} "
         f"x[{min(xs):.4f},{max(xs):.4f}] y[{min(ys):.4f},{max(ys):.4f}] z[{min(zs):.4f},{max(zs):.4f}]"
     )
 

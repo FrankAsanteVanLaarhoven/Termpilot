@@ -166,6 +166,19 @@ export function G1Humanoid({
           metalness: 0.05,
           roughness: 0.12,
           toneMapped: false,
+          depthTest: true,
+          depthWrite: true,
+          polygonOffset: true,
+          polygonOffsetFactor: -2,
+          polygonOffsetUnits: -2,
+        });
+        const plaque = new THREE.MeshPhysicalMaterial({
+          color: 0x0a1218,
+          metalness: 0.88,
+          roughness: 0.28,
+          clearcoat: 0.6,
+          emissive: 0x021018,
+          emissiveIntensity: 0.2,
         });
         const ownedBy = (node: import("three").Object3D, name: string) => {
           let current: import("three").Object3D | null = node;
@@ -179,9 +192,11 @@ export function G1Humanoid({
         robot.traverse((node) => {
           if (!(node instanceof THREE.Mesh)) return;
           if (ownedBy(node, "logo_link")) {
-            node.material = neon;
-            node.castShadow = false;
-            node.renderOrder = 3;
+            const count = node.geometry.getAttribute("position")?.count ?? 0;
+            node.material = count > 4000 ? neon : plaque;
+            node.castShadow = true;
+            node.receiveShadow = true;
+            node.renderOrder = 1;
             return;
           }
           node.material = meshIndex++ % 4 === 0 ? graphite : dark;
@@ -195,7 +210,7 @@ export function G1Humanoid({
         const logo = robot.links.logo_link;
         const logoLight = new THREE.PointLight(0x33f0ff, 11, 0.7, 1.45);
         if (logo) {
-          logoLight.position.set(0.09, 0, 0.27);
+          logoLight.position.set(0.064, 0, 0.26);
           logo.add(logoLight);
         }
 
