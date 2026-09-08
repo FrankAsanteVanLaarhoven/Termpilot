@@ -221,3 +221,32 @@ async def test_production_session_cookie_opens_tower(
     finally:
         monkeypatch.setenv("TERMPILOT_ENV", "test")
         reset_settings_cache()
+
+
+async def test_signed_session_survives_a_fresh_database(
+    client: AsyncClient, monkeypatch, tmp_path
+) -> None:
+    import os
+
+    from app.storage.database import init_db, reset_engine
+
+    demo = await client.post("/auth/demo")
+    assert demo.status_code == 200
+    token = demo.cookies.get("tp_session")
+    assert token
+    assert token.count("|") >= 4
+    os.environ["DATABASE_URL"] = f"sqlite+aiosqlite:///{tmp_path / 'fresh.db'}"
+    monkeypatch.setenv("TERMPILOT_ENV", "production")
+    reset_settings_cache()
+    await reset_engine()
+    await init_db()
+    try:
+        me = await client.get("/me")
+        assert me.status_code == 200
+        assert me.json()["user_id"] == "FAVL"
+        tower = await client.get("/tower")
+        assert tower.status_code == 200
+    finally:
+        monkeypatch.setenv("TERMPILOT_ENV", "test")
+        reset_settings_cache()
+        await reset_engine()

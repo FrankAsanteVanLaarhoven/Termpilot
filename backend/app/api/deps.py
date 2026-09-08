@@ -8,8 +8,8 @@ from fastapi import Depends, Header, HTTPException, Request
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.domain.models import UserProfile
-from app.services.auth import SESSION_COOKIE, resolve_session
-from app.services.identity import is_university_email, user_id_from_email
+from app.services.auth import SESSION_COOKIE, read_session_token, resolve_session
+from app.services.identity import DEMO_EMAIL, is_university_email, user_id_from_email
 from app.settings import get_settings
 from app.storage.database import get_session_factory, init_db
 
@@ -33,10 +33,21 @@ async def current_user_id(
     x_student_email: str | None = Header(default=None, alias="X-Student-Email"),
 ) -> str:
     settings = get_settings()
-    cookie_user = await resolve_session(session, request.cookies.get(SESSION_COOKIE))
-    if settings.strict_auth:
-        if cookie_user:
+    raw_cookie = request.cookies.get(SESSION_COOKIE)
+    cookie_user = await resolve_session(session, raw_cookie)
+    if cookie_user:
+        user = await session.get(UserProfile, cookie_user)
+        if user is None:
+            from app.services.demo import seed_user
+
+            signed = read_session_token(raw_cookie)
+            email = (signed[1] if signed and signed[1] else None) or (
+                DEMO_EMAIL if cookie_user == settings.demo_user_id else None
+            )
+            await seed_user(session, user_id=cookie_user, email=email)
+        if settings.strict_auth:
             return cookie_user
+    elif settings.strict_auth:
         raise HTTPException(
             status_code=401,
             detail="Sign in with your campus account to use TermPilot.",

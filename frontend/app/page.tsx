@@ -117,6 +117,7 @@ export default function Page() {
   const [invites, setInvites] = useState<{ id: string; to_name: string; task_title: string; state: string }[]>([]);
   const navOpen = navPinned || navHover;
   const preparedRef = useRef(false);
+  const authRetryRef = useRef(0);
   const [hydrated, setHydrated] = useState(false);
 
   const load = useCallback(async () => {
@@ -176,8 +177,25 @@ export default function Page() {
       setPeers(collab.peers);
       setInvites(collab.items);
       setError(null);
+      authRetryRef.current = 0;
     } catch (err) {
       if (err instanceof AuthRequiredError) {
+        const student = readStudentSession();
+        if (student && authRetryRef.current < 1) {
+          authRetryRef.current += 1;
+          if (student.userId === "FAVL") {
+            try {
+              await api.demoLogin();
+            } catch {
+              writeGrokSession(false);
+              setGate("splash");
+              return;
+            }
+          }
+          preparedRef.current = false;
+          await load();
+          return;
+        }
         writeGrokSession(false);
         setGate("splash");
         return;

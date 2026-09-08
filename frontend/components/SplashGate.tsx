@@ -190,7 +190,8 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
         email: profile.email ?? mail,
         displayName: profile.display_name ?? "Student",
       });
-      void finish();
+      onEnter();
+      void finish(false);
     }
   }
 
@@ -271,7 +272,7 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
     await finish();
   }
 
-  async function finish() {
+  async function finish(enter = true) {
     try {
       localStorage.setItem(
         ONBOARD_KEY,
@@ -296,7 +297,7 @@ export function SplashGate({ onEnter }: { onEnter: () => void }) {
     } finally {
       setPreparing(false);
     }
-    onEnter();
+    if (enter) onEnter();
   }
 
   return (

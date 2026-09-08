@@ -8,6 +8,7 @@ import re
 import secrets
 from datetime import timedelta
 from typing import Any
+from urllib.parse import quote, unquote
 
 from fastapi import Response
 from sqlalchemy import select
@@ -233,10 +234,44 @@ async def consume_otp(
     return row
 
 
+def _session_key() -> bytes:
+    settings = get_settings()
+    raw = (settings.session_secret or "").strip() or "termpilot-session-v1"
+    return hashlib.sha256(raw.encode()).digest()
+
+
+def mint_session_token(user_id: str, email: str = "") -> str:
+    exp = int(clock.now().timestamp()) + get_settings().session_days * 86400
+    nonce = secrets.token_hex(8)
+    body = f"{user_id}|{quote(email or '', safe='@.+-_')}|{exp}|{nonce}"
+    sig = hmac.new(_session_key(), body.encode(), hashlib.sha256).hexdigest()[:32]
+    return f"{body}|{sig}"
+
+
+def read_session_token(token: str | None) -> tuple[str, str] | None:
+    if not token or token.count("|") < 4:
+        return None
+    user_id, email, exp_raw, nonce, sig = token.rsplit("|", 4)
+    body = f"{user_id}|{email}|{exp_raw}|{nonce}"
+    expected = hmac.new(_session_key(), body.encode(), hashlib.sha256).hexdigest()[:32]
+    if not hmac.compare_digest(expected, sig):
+        return None
+    try:
+        exp = int(exp_raw)
+    except ValueError:
+        return None
+    if exp < int(clock.now().timestamp()):
+        return None
+    return user_id, unquote(email)
+
+
 async def create_session(
-    session: AsyncSession, user_id: str, request: Any | None = None
+    session: AsyncSession, user_id: str, request: Any | None = None, email: str | None = None
 ) -> str:
-    raw = secrets.token_urlsafe(32)
+    if not email:
+        user = await session.get(UserProfile, user_id)
+        email = user.email if user else ""
+    raw = mint_session_token(user_id, email or "")
     now = clock.now()
     days = get_settings().session_days
     session.add(
@@ -256,6 +291,9 @@ async def create_session(
 async def resolve_session(session: AsyncSession, token: str | None) -> str | None:
     if not token:
         return None
+    signed = read_session_token(token)
+    if signed:
+        return signed[0]
     now = clock.now()
     row = (
         await session.execute(

@@ -109,6 +109,7 @@ class Settings(BaseSettings):
     twilio_auth_token: str | None = Field(default=None, alias="TWILIO_AUTH_TOKEN")
     twilio_from: str | None = Field(default=None, alias="TWILIO_FROM")
     session_days: int = Field(default=7, alias="TERMPILOT_SESSION_DAYS")
+    session_secret: str = Field(default="", alias="TERMPILOT_SESSION_SECRET")
 
     @property
     def fixtures_root(self) -> Path:

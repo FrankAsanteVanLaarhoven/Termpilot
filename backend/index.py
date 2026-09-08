@@ -81,5 +81,12 @@ async def forward(full_path: str, request: Request) -> Response:
             cookies=request.cookies,
         )
     skipped = {"content-encoding", "content-length", "transfer-encoding", "connection"}
-    headers = {k: v for k, v in upstream.headers.items() if k.lower() not in skipped}
-    return Response(content=upstream.content, status_code=upstream.status_code, headers=headers)
+    outgoing = Response(content=upstream.content, status_code=upstream.status_code)
+    for key, value in upstream.headers.multi_items():
+        if key.lower() in skipped:
+            continue
+        if key.lower() == "set-cookie":
+            outgoing.headers.append("set-cookie", value)
+        else:
+            outgoing.headers[key] = value
+    return outgoing
