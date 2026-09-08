@@ -232,7 +232,7 @@ export function G1Humanoid({
         const logo = robot.links.logo_link;
         const logoLight = new THREE.PointLight(0x33f0ff, 3.2, 0.16, 2);
         if (logo) {
-          logoLight.position.set(0.082, 0, 0.182);
+          logoLight.position.set(0.080, 0, 0.181);
           logo.add(logoLight);
         }
 

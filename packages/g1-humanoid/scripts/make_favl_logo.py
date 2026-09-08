@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Build the FAVL neon-tube chest mark that replaces the Unitree nameplate."""
+"""Build the FAVL neon-tube chest mark that replaces the Unitree nameplate.
+
+The mark is the connected FAVL wordmark: F, a rounded V-valley, an A peak,
+then L. Tubes sit in a recessed mid-chest plaque so they read as carved armor,
+not a sticker floating off the torso.
+"""
 
 from __future__ import annotations
 
@@ -15,16 +20,18 @@ COLLISION = (
     ROOT / "frontend" / "public" / "robot" / "g1" / "assets" / "collisions" / "logo_link_collision.STL"
 )
 
-# Mid-chest plate (z~0.18, surface x≈0.083). Carve a pocket and sit letters in it.
-CHEST_X = 0.0774
-PLATE_BACK = 0.0735
-PLATE_FRONT = 0.0816
-Z0 = 0.168
-LETTER_W = 0.021
-LETTER_H = 0.028
-GAP = 0.006
-RADIUS = 0.00235
-RADIAL = 14
+# Mid-chest pocket. Chest skin is x≈0.0836; keep the bezel behind that and the
+# tubes inside the pocket so the mark is inlaid, not proud of the armor.
+CHEST_X = 0.0776
+PLATE_BACK = 0.0728
+FLOOR_FRONT = 0.0754
+BEZEL_BACK = 0.0794
+BEZEL_FRONT = 0.0818
+Z0 = 0.150
+LOGO_W = 0.102
+LOGO_H = 0.063
+RADIUS = 0.00255
+RADIAL = 16
 # Belly-button hexagon, lower torso.
 MIC_Z = 0.118
 MIC_R = 0.0115
@@ -63,16 +70,14 @@ def _normal(a: tuple[float, float, float], b: tuple[float, float, float], c: tup
     return _norm(_cross(_sub(b, a), _sub(c, a)))
 
 
-def letter_to_world(index: int, u: float, v: float) -> tuple[float, float, float]:
-    total = 4 * LETTER_W + 3 * GAP
-    y_left = total / 2 - index * (LETTER_W + GAP)
-    # Camera looks down -X; screen-left is -Y, so F (index 0) must sit on -Y.
-    y = -(y_left - u * LETTER_W)
-    z = Z0 + v * LETTER_H
+def uv_to_world(u: float, v: float) -> tuple[float, float, float]:
+    """u=0 is screen-left F (URDF -Y). v=0 is the bottom of the mark."""
+    y = (u - 0.5) * LOGO_W
+    z = Z0 + v * LOGO_H
     return (CHEST_X, y, z)
 
 
-def sample_polyline(points: list[tuple[float, float, float]], spacing: float = 0.0009) -> list[tuple[float, float, float]]:
+def sample_polyline(points: list[tuple[float, float, float]], spacing: float = 0.00085) -> list[tuple[float, float, float]]:
     out: list[tuple[float, float, float]] = []
     for start, end in zip(points, points[1:]):
         delta = _sub(end, start)
@@ -83,6 +88,21 @@ def sample_polyline(points: list[tuple[float, float, float]], spacing: float = 0
             out.append(_add(start, _scale(delta, t)))
     out.append(points[-1])
     return out
+
+
+def arc_yz(
+    cy: float,
+    cz: float,
+    radius: float,
+    a0: float,
+    a1: float,
+    steps: int = 12,
+) -> list[tuple[float, float, float]]:
+    pts: list[tuple[float, float, float]] = []
+    for i in range(steps + 1):
+        t = a0 + (a1 - a0) * i / steps
+        pts.append((CHEST_X, cy + radius * math.cos(t), cz + radius * math.sin(t)))
+    return pts
 
 
 def orthonormal(direction: tuple[float, float, float]) -> tuple[tuple[float, float, float], tuple[float, float, float]]:
@@ -116,7 +136,13 @@ def add_sphere(tris: list, center: tuple[float, float, float], radius: float, sl
                 tris.append((c, b, d))
 
 
-def add_tube(tris: list, path: list[tuple[float, float, float]], radius: float) -> None:
+def add_tube(
+    tris: list,
+    path: list[tuple[float, float, float]],
+    radius: float,
+    cap_start: bool = True,
+    cap_end: bool = True,
+) -> None:
     if len(path) < 2:
         return
     rings: list[list[tuple[float, float, float]]] = []
@@ -141,8 +167,10 @@ def add_tube(tris: list, path: list[tuple[float, float, float]], radius: float) 
             c, d = rings[i + 1][k], rings[i + 1][kn]
             tris.append((a, b, c))
             tris.append((c, b, d))
-    add_sphere(tris, path[0], radius)
-    add_sphere(tris, path[-1], radius)
+    if cap_start:
+        add_sphere(tris, path[0], radius)
+    if cap_end:
+        add_sphere(tris, path[-1], radius)
 
 
 def add_box(tris: list, min_pt: tuple[float, float, float], max_pt: tuple[float, float, float]) -> None:
@@ -171,33 +199,94 @@ def add_box(tris: list, min_pt: tuple[float, float, float], max_pt: tuple[float,
         tris.append((v[a], v[c], v[d]))
 
 
-GLYPHS: list[list[list[tuple[float, float]]]] = [
-    # F
-    [[(0.08, 0.00), (0.08, 1.00), (0.92, 1.00)], [(0.08, 0.54), (0.72, 0.54)]],
-    # A
-    [[(0.04, 0.00), (0.50, 1.00), (0.96, 0.00)], [(0.24, 0.38), (0.76, 0.38)]],
-    # V
-    [[(0.04, 1.00), (0.50, 0.00), (0.96, 1.00)]],
-    # L
-    [[(0.10, 1.00), (0.10, 0.00), (0.90, 0.00)]],
-]
+def wordmark_paths() -> list[list[tuple[float, float, float]]]:
+    """Connected FAVL neon tubes, traced from the brand wordmark.
+
+    Stroke 1: F spine and top bar (rounded Γ).
+    Stroke 2: F middle bar into the V-valley, then up to the A peak.
+    Stroke 3: L stem and foot.
+    """
+    r_f = 0.0060
+    r_l = 0.0062
+    stem_u = 0.018
+    mid_v = 0.50
+    top_v = 0.97
+    bot_v = 0.018
+    f_bar_u = 0.338
+    l_u = 0.782
+
+    stem = uv_to_world(stem_u, bot_v)
+    f_top_end = uv_to_world(f_bar_u, top_v)
+    # F top-left: up the stem, quarter-turn into the top bar (increasing Y).
+    y_stem = stem[1]
+    z_top = f_top_end[2]
+    f_arc_c = (y_stem + r_f, z_top - r_f)
+    f_spine: list[tuple[float, float, float]] = [
+        stem,
+        (CHEST_X, y_stem, f_arc_c[1]),
+    ]
+    f_spine += arc_yz(f_arc_c[0], f_arc_c[1], r_f, math.pi, math.pi / 2, 14)
+    f_spine.append(f_top_end)
+
+    # F middle into the V-valley and up the A peak. Points traced from the
+    # brand wordmark centerline (neon-tube photograph).
+    wave_uv = [
+        (stem_u, mid_v),
+        (0.18, mid_v),
+        (0.30, mid_v),
+        (0.345, 0.46),
+        (0.375, 0.28),
+        (0.400, 0.12),
+        (0.425, 0.04),
+        (0.448, 0.015),
+        (0.470, 0.015),
+        (0.492, 0.04),
+        (0.518, 0.12),
+        (0.545, 0.26),
+        (0.575, 0.42),
+        (0.608, 0.58),
+        (0.642, 0.74),
+        (0.675, 0.88),
+        (0.700, 0.95),
+        (0.722, 0.97),
+    ]
+    wave = [uv_to_world(u, v) for u, v in wave_uv]
+
+    # L: round cap, down, quarter-turn, foot to the right.
+    l_top = uv_to_world(l_u, top_v)
+    l_y = l_top[1]
+    z_l_bot = uv_to_world(l_u, bot_v)[2]
+    l_arc_c = (l_y + r_l, z_l_bot + r_l)
+    ell: list[tuple[float, float, float]] = [
+        l_top,
+        (CHEST_X, l_y, l_arc_c[1]),
+    ]
+    ell += arc_yz(l_arc_c[0], l_arc_c[1], r_l, math.pi, 1.5 * math.pi, 14)
+    ell.append(uv_to_world(0.995, bot_v))
+    return [f_spine, wave, ell]
+
+
+def plate_bounds() -> tuple[float, float, float, float]:
+    pad_y, pad_z = 0.010, 0.008
+    y0, y1 = -LOGO_W / 2 - pad_y, LOGO_W / 2 + pad_y
+    z0, z1 = Z0 - pad_z, Z0 + LOGO_H + pad_z
+    return y0, y1, z0, z1
 
 
 def build_plate() -> list[tuple]:
-    """Sunken chest plaque the letters sit in, so FAVL reads as inlaid armor."""
+    """Recessed chest plaque: dark floor + raised bezel, open over the tubes."""
     tris: list = []
-    total = 4 * LETTER_W + 3 * GAP
-    pad_y, pad_z = 0.008, 0.007
-    y0, y1 = -total / 2 - pad_y, total / 2 + pad_y
-    z0, z1 = Z0 - pad_z, Z0 + LETTER_H + pad_z
-    # Main inlay slab, slightly behind the letter tubes.
-    add_box(tris, (PLATE_BACK, y0, z0), (PLATE_FRONT, y1, z1))
-    rim = 0.0024
-    # Raised bezel around the recess so the mark is set into the chest.
-    add_box(tris, (PLATE_FRONT - 0.0004, y0 - rim, z0 - rim), (PLATE_FRONT + 0.0016, y1 + rim, z0 + 0.0018))
-    add_box(tris, (PLATE_FRONT - 0.0004, y0 - rim, z1 - 0.0018), (PLATE_FRONT + 0.0016, y1 + rim, z1 + rim))
-    add_box(tris, (PLATE_FRONT - 0.0004, y0 - rim, z0), (PLATE_FRONT + 0.0016, y0 + 0.0018, z1))
-    add_box(tris, (PLATE_FRONT - 0.0004, y1 - 0.0018, z0), (PLATE_FRONT + 0.0016, y1 + rim, z1))
+    y0, y1, z0, z1 = plate_bounds()
+    # Floor of the pocket, behind the tubes.
+    add_box(tris, (PLATE_BACK, y0, z0), (FLOOR_FRONT, y1, z1))
+    # Inner opening slightly larger than the wordmark so tubes sit in a window.
+    inner_y0, inner_y1 = y0 + 0.0048, y1 - 0.0048
+    inner_z0, inner_z1 = z0 + 0.0042, z1 - 0.0042
+    # Raised bezel frame around the recess.
+    add_box(tris, (BEZEL_BACK, y0, z0), (BEZEL_FRONT, y1, inner_z0))
+    add_box(tris, (BEZEL_BACK, y0, inner_z1), (BEZEL_FRONT, y1, z1))
+    add_box(tris, (BEZEL_BACK, y0, inner_z0), (BEZEL_FRONT, inner_y0, inner_z1))
+    add_box(tris, (BEZEL_BACK, inner_y1, inner_z0), (BEZEL_FRONT, y1, inner_z1))
     return tris
 
 
@@ -230,13 +319,10 @@ def add_hexagon_prism(
 
 def build_letters() -> list[tuple]:
     tris: list = []
-    for index, strokes in enumerate(GLYPHS):
-        for stroke in strokes:
-            world = [letter_to_world(index, u, v) for u, v in stroke]
-            path = sample_polyline(world)
-            add_tube(tris, path, RADIUS)
-            for point in world:
-                add_sphere(tris, point, RADIUS * 1.02)
+    for index, stroke in enumerate(wordmark_paths()):
+        path = sample_polyline(stroke)
+        # Wave starts inside the F stem; skip that cap so the T-junction fuses.
+        add_tube(tris, path, RADIUS, cap_start=index != 1, cap_end=True)
     return tris
 
 
@@ -251,7 +337,47 @@ def write_stl(path: Path, tris: list, header: bytes = HEADER) -> None:
     path.write_bytes(blob)
 
 
+def write_preview(path: Path, strokes: list[list[tuple[float, float, float]]]) -> None:
+    """Orthographic YZ preview (screen-left = -Y) so we can match the wordmark."""
+    try:
+        from PIL import Image, ImageDraw
+    except ImportError:
+        return
+    w, h = 640, 400
+    img = Image.new("RGB", (w, h), (4, 10, 18))
+    draw = ImageDraw.Draw(img)
+    y0, y1, z0, z1 = plate_bounds()
+    pad = 0.012
+    y0, y1, z0, z1 = y0 - pad, y1 + pad, z0 - pad, z1 + pad
+
+    def xy(pt: tuple[float, float, float]) -> tuple[float, float]:
+        # URDF -Y is screen-left, +Z is up.
+        px = (pt[1] - y0) / (y1 - y0) * (w - 1)
+        py = (z1 - pt[2]) / (z1 - z0) * (h - 1)
+        return px, py
+
+    # Pocket outline.
+    corners = [
+        uv_to_world(-0.02, -0.04),
+        uv_to_world(1.02, -0.04),
+        uv_to_world(1.02, 1.04),
+        uv_to_world(-0.02, 1.04),
+    ]
+    draw.polygon([xy(p) for p in corners], outline=(20, 48, 62), width=2)
+    for stroke in strokes:
+        dense = sample_polyline(stroke, 0.0006)
+        pts = [xy(p) for p in dense]
+        draw.line(pts, fill=(0, 229, 255), width=9)
+        draw.line(pts, fill=(180, 250, 255), width=3)
+        for cap in (dense[0], dense[-1]):
+            cx, cy = xy(cap)
+            draw.ellipse((cx - 5, cy - 5, cx + 5, cy + 5), fill=(0, 229, 255))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    img.save(path)
+
+
 def main() -> None:
+    strokes = wordmark_paths()
     letters = build_letters()
     plate = build_plate()
     write_stl(OUT, letters)
@@ -259,14 +385,12 @@ def main() -> None:
     mic: list = []
     add_hexagon_prism(mic, (MIC_BACK + MIC_FRONT) / 2, 0.0, MIC_Z, MIC_R, MIC_BACK, MIC_FRONT)
     write_stl(MIC_OUT, mic, b"FAVL chest mic hex")
-    total = 4 * LETTER_W + 3 * GAP
+    y0, y1, z0, z1 = plate_bounds()
     collision: list = []
-    add_box(
-        collision,
-        (PLATE_BACK, -total / 2 - 0.01, Z0 - 0.008),
-        (PLATE_FRONT + RADIUS, total / 2 + 0.01, Z0 + LETTER_H + 0.008),
-    )
+    add_box(collision, (PLATE_BACK, y0, z0), (BEZEL_FRONT + RADIUS, y1, z1))
     write_stl(COLLISION, collision, b"FAVL logo collision")
+    preview = Path("/tmp/favl_chest_preview.png")
+    write_preview(preview, strokes)
     xs = [p[0] for tri in letters for p in tri]
     ys = [p[1] for tri in letters for p in tri]
     zs = [p[2] for tri in letters for p in tri]
@@ -274,6 +398,7 @@ def main() -> None:
         f"wrote {OUT} tris={len(letters)} plate={len(plate)} "
         f"x[{min(xs):.4f},{max(xs):.4f}] y[{min(ys):.4f},{max(ys):.4f}] z[{min(zs):.4f},{max(zs):.4f}]"
     )
+    print(f"preview {preview}")
 
 
 if __name__ == "__main__":
